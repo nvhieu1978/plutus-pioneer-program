@@ -470,3 +470,47 @@ properties of individual contracts. That means we can guarantee this contract wi
 
 Also we can do machine-supported proof so, not automatic any longer, written by a user, but we can prove properties of the overall system.
 
+Static Analysis 
++++++++++++++++
+
+.. figure:: img/pic__00058.png
+
+What static analysis allows us to do is check all execution paths through a Marlowe contract. All choices, all choices of slots for a submission of a transaction so
+we examine every possible way in which the contract might be executed.
+
+The canonical example here is the example of whether a pay construct might fail. Is it possible a pay construct could fail? The answer is that we
+will use what's called an SMT solver An SMT is an automatic logic tool - the one we use is called Z3, although others are available. The SMT solver effectively 
+checks all execution parts.
+
+If a property is is satisfied that's fine, we get get the result. If it's not satisfied, we get a counter example. We get told that there's a way 
+through this contract that leads to a failed payment - a payment that can't be fulfilled. So it gives an example of how it can go wrong, and that's really 
+helpful. It means that if you really want to make sure that a failed payment can't happen, then this gives you a mechanism to understand
+and to debug how that eventuality can happen, and so gives you a chance to think about how to avoid it.
+
+So, very powerful and entirely push button. You push a button and you get the results.
+
+.. figure:: img/pic__00058.png
+
+Here you see a fragment of a Marlowe contract. It's an escrow contract where the contract starts with a deposit of 450 lovelace.
+
+Checking the analysis in the playground, we've got the results. Static analysis could not find any any execution that results in any warning, so that's saying
+that you're okay - it's not going to give you a warning whatever you do.
+
+But if we change that deposit of 450 lovelace to a deposit of 40 and analyze we then get this warning.
+
+.. figure:: img/pic__00059.png
+
+We get a transaction partial payment. We're told that we get to a payment where we're meant to pay 450 units of lovelace but there are only 40 available, and we
+get given a list of transactions that take us there.
+
+So we're able to see from that how we got to that point, and the problem is that we didn't put enough money in and then we reached a place where we needed to make a
+payment of 450 lovelace.
+
+So it's easy for us to see that we need to either make the payment smaller or make the initial deposit bigger. As it's entirely push button, we get that sort of assurance for free, as it were.
+
+.. figure:: img/pic__00059.png
+
+But thinking about verification, we can do rather more than that. We can prove properties of the system once and for all.
+
+So, for example, just looking on the left-hand side here, we can prove from the semantics, that accounts inside a Marlowe contract as it executes never go negative.
+
