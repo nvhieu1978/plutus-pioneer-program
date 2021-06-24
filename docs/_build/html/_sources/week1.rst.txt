@@ -302,9 +302,7 @@ playground can compile the code itself.
 The English Auction contract
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The code for the English Auction contract:
-
-.. code:: haskell
+The code for the English Auction contract can be found at
 
 ::
 
@@ -320,7 +318,7 @@ such an error.
 .. figure:: img/plutus_playground.png
    :alt: Plutus Playground
 
-Copy and paste the EnglishAuction.sh file contents into the playground,
+Copy and paste the EnglishAuction.hs file contents into the playground,
 replacing the existing demo contract.
 
 When using the original tag for Week 01
