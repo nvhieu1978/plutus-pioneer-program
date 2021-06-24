@@ -1,38 +1,4 @@
 
- so
-that you'll see the steps as a series of
-um cards like this
-but that's that's work in progress
-okay so we've talked about um
-we've talked about usability what about
-the sort of assurance that marlow
-can give users
-there are two gen apart from the things
-we've seen already we've seen
-we've seen that making the system
-transparent making
-code readable is itself an advantage
-we've seen that there's simulation to
-give people
-um to give people uh
-the ability to understand to validate
-their intuition about a contract
-but rather more formally we can use the
-power of logic to do
-two things for us we can do what's
-called static analysis so we could
-automatically verify
-properties of individual contracts that
-means we can guarantee
-this contract will behave as it should
-checking every route through the
-contract and also we can do machine
-supported proof so
-not automatic any longer written by
-written by a user but we can prove
-properties of the
-the overall system let's talk about
-those two now
 what about static analysis well what
 static analysis
 allows us to do is check all execution

@@ -451,6 +451,22 @@ That's something you can play with yourselves. We are looking at different ways 
 log. We are allowed to choose an next action to perform, you can undo the last step to take you back and then try another path so you can step interactively 
 backwards and forwards through the source code through the application of the contract.
 
-What we're looking at is changing the user interface Marlowe Playground so that we'll use something rather more like the the Marlowe Run run description of a running contract.
+What we're looking at is changing the user interface Marlowe Playground so that we'll use something rather more like the Marlowe Run run description of a running contract.
 
 .. figure:: img/pic__00056.png
+
+Assurance 
+~~~~~~~~~
+
+We've talked about usability. What about the sort of assurance that Marlowe can give users?
+
+.. figure:: img/pic__00057.png
+
+We've seen we've seen that making the system transparent, that making code readable is itself an advantage. We've seen that there's simulation to
+give people to validate their intuition about a contract.
+
+But rather more formally we can use the power of logic to do two things for us. We can do what's called *static analysis* so we can automatically verify
+properties of individual contracts. That means we can guarantee this contract will behave as it should, checking every route through the contract.
+
+Also we can do machine-supported proof so, not automatic any longer, written by a user, but we can prove properties of the overall system.
+
