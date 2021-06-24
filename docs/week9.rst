@@ -442,3 +442,15 @@ whose output is Marlowe code.
 
 We provide users with a variety of different approaches, leveraging knowledge of Javascript, for example, or leveraging a non-code-based approach for 
 describing the contracts
+
+We also allow people to simulate the behavior of contracts. This is something that you can see in the current version of the Marlowe Playground.
+
+.. figure:: img/pic__00055.png
+
+That's something you can play with yourselves. We are looking at different ways of describing the results of a simulation. So at the moment we have a transaction
+log. We are allowed to choose an next action to perform, you can undo the last step to take you back and then try another path so you can step interactively 
+backwards and forwards through the source code through the application of the contract.
+
+What we're looking at is changing the user interface Marlowe Playground so that we'll use something rather more like the the Marlowe Run run description of a running contract.
+
+.. figure:: img/pic__00056.png

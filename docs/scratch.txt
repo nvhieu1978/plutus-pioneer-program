@@ -1,34 +1,5 @@
 
-and also we allow people to simulate
-the the behavior of contracts now this
-is something that you can see
-in the current version of the marlow
-playground i've taken a screenshot of
-that
-that's something you can play with
-yourselves um
-what i would say is that i we are
-looking at
-different ways of describing the results
-of a simulation
-so at the moment we have a transaction
-log we are allowed to
-choose an action the next action to
-perform um you can perform that you can
-undo the last step to take you back and
-then try another
-another path so you can you can step
-interactively backwards and forwards
-through the source
-code through the application of the
-contract
-what we're looking at is changing the
-user interface changing the ux for the
-milo playground
-milo run multiplay so that we'll use
-something rather more like the the
-marlow
-run description of a running contract so
+ so
 that you'll see the steps as a series of
 um cards like this
 but that's that's work in progress
