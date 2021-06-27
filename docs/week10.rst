@@ -59,7 +59,7 @@ It's important to note here that the ratio between A and B reflects Alice's beli
 
 In order to create the liquidity pool, she will create a transaction with two inputs and three outputs.
 
-.. figure:: img/pic__00150.png
+.. figure:: img/pic__00151.png
 
 The two inputs will be the liquidity she wants to provide; the 1000A and 2000B and the Uniswap factory invoked with the create redeemer. The three outputs 
 will be the newly-created pool.
@@ -79,7 +79,7 @@ Finally, there's a third output for Alice, where she receives the freshly-minted
 
 Now that the liquidity pool has been set up, other users can use it to swap.
 
-.. figure:: img/pic__00151.png
+.. figure:: img/pic__00152.png
 
 So let's assume that Bob wants to swap 100A against B. What will Bob do?
 
@@ -130,7 +130,7 @@ So that's her incentive to set up the pool in the first place.
 
 The next operation we look at is the add operation where somebody supplies the pool with additional liquidity.
 
-.. figure:: img/pic__00152.png
+.. figure:: img/pic__00153.png
 
 So let's say that Charlie also believes that the ratio from A to B should be 1:2 and he wants to contribute 400A and 800B.
 He could also have tokens in a different ratio.
@@ -160,7 +160,7 @@ then they shouldn't profit from the fees that have accumulated in the meantime.
 The next operation we look at is called removed and it allows owners of liquidity
 tokens for a pool to burn some of them.
 
-.. figure:: img/pic__00153.png
+.. figure:: img/pic__00154.png
 
 So in this example, let's assume that Alice wants to
 burn all her liquidity tokens.
@@ -185,8 +185,7 @@ So the 1072, 1,869 should be the same ratio as the 1,500 to 2,619.
 So by burning, you don't change the ratio of the pool.
 The last operation is close and it is for completely closing a pool and removing it.
 
-.. figure:: img/pic__00154.png
-
+.. figure:: img/pic__00155.png
 
 And this can only happen when the last remaining liquidity tokens are burnt.
 So in our example, Charlie holds all the remaining 567 liquidity tokens, and
@@ -216,3 +215,82 @@ list, and the second output contains of all the remaining tokens, all the
 tokens that were still in the pool by the time it gets closed down.
 So the remaining liquidity tokens are burnt and Charlie gets all the
 remaining tokens from the pool.
+
+.. figure:: img/pic__00157.png
+
+
+Code for Uniswap is actually part of the Plutus repository and it is in the Plutus
+use cases library, and it split into four modules that are imported by the
+Plutus dot contracts dot Uniswap module.
+On-chain, off-chain, types and pool.
+So as the names suggest:
+on-chain contains the on-chain validation.
+Off-chain contains the off-chain contracts.
+Types contains common types that the other shares.
+And pool contains the business logic, the calculations, how many liquidity tokens
+the creator of a pool gets, how many tokens you get when you add liquidity
+to a pool, how many tokens you get back when you burn liquidity tokens and
+under which conditions a swap is valid.
+So I don't want to go through all of that in too much detail.
+It contains nothing we haven't talked about before, but let's
+at least have a brief look.
+So let's look at the types module first.
+You represents the Uniswap coin, the one that identifies the factory
+
+.. figure:: img/pic__00159.png
+
+
+A and
+B are used for pool operations where we have these two sorts of tokens inside
+the pool,
+
+.. figure:: img/pic__00160.png
+
+pool state is the token that identifies a pool, actually in the
+diagram earlier I said it's an NFT.
+And by definition, NFT is something that only exists once actually here in the
+implementation for each pool, an identical coin is created that identifies that pool.
+So it's not strictly speaking NFT.
+So all the liquidity pools have one coin of that sort
+
+.. figure:: img/pic__00161.png
+
+and liquidity
+is used for the liquidity tokens that the liquidity providers gets.
+
+.. figure:: img/pic__00162.png
+
+And all these types are then used in the coin A type.
+So A is a type parameter, that's a so-called Phantom type.
+So that means it has no representation at run time.
+It's just used to not mix up the various coins to make it easier to see what goes
+where, so in the datum, a coin is simply an asset class that we have seen before.
+So asset class recall is a combination of currency symbol and token name.
+
+.. figure:: img/pic__00163.png
+
+then amount is just a wrapper around integer that also contains
+such a Phantom type parameter, so that we don't confuse amounts for
+token A and token B for example.
+
+.. figure:: img/pic__00164.png
+
+Then we have some helper functions, constructing a
+value from coin and the amount.
+And here, for example, we see the use of this Phantom type, that's actually a
+common trick in Haskell because now if you have, for example, pool operations
+that has two different coins and two different amounts for the different coins.
+And if the one is tag with this type capital A and the other with capital
+B, then normally one could easily confuse them and somehow do operations
+with the one coin, with the amount for the other, and then make a mistake.
+And here the type system enforces that we don't do that.
+So we can only use this value of function, for example, if we a coin and
+the amount with the same tag type tag.
+So as I said, that's a common trick in Haskell that some lightweight type
+level programming that is doesn't need any fancy GHC extensions.
+Unit Value creates one amount of the given coin.
+Is unity checks whether this coin is contained in the value exactly once,
+then amount checks how often the coin is contained in the value, and
+finally make coin turns a currency symbol into a token name, into a coin.
+
+.. figure:: img/pic__00165.png
