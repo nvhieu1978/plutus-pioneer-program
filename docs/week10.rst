@@ -294,3 +294,33 @@ then amount checks how often the coin is contained in the value, and
 finally make coin turns a currency symbol into a token name, into a coin.
 
 .. figure:: img/pic__00165.png
+
+And we have the Uniswap type which identifies the instance of the
+Uniswap system we are running.
+So of course, nobody can stop anybody from setting up a competing Uniswap system with
+the competing factory, but the value of this type identifies a specific system.
+And all the operations that are specific to pool will be parameterized
+by a value of this type, but it's just a wrapper around the coin U.
+And that is just the NFT that identifies the factory.
+
+.. figure:: img/pic__00166.png
+
+Then we have a type for liquidity pools, and that is basically just
+two coins, the two coins in there.
+
+However, there is one slight complication, only the two types
+of tokens inside the pool matter.
+
+.. figure:: img/pic__00167.png
+
+Not the order, there is no first or second token, a pool that has coin
+A, A and coin B, B should be the same as one where A and B are swapped.
+And in order to achieve that, the eq instance has a special implementation.
+So it's not the standard, we don't just compare if we want to compare two
+liquidity pools, we don't just compare the first field with the first field of
+other, and the second with the second, but we also try the other way round.
+So liquidity pool tokens AB would be the same as liquidity pool with tokens BA.
+So that's the only slight complication here.
+
+.. figure:: img/pic__00168.png
+
