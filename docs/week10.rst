@@ -324,3 +324,28 @@ So that's the only slight complication here.
 
 .. figure:: img/pic__00168.png
 
+Then we define the actions, that's basically the redeemers.
+So create with argument liquidity pool is for creating a new liquidity
+pool closes for closing one, swap is for swapping, remove is for removing
+liquidity and add is for adding liquidity.
+Note that in the diagrams I showed earlier for simplicity, I
+called the redeemer simply create.
+So I didn't mention this argument of type liquidity pool.
+
+.. figure:: img/pic__00170.png
+
+The datum is a bit more complex than we have seen before.
+So it's not just a simple integer or similarly simple
+type, it's a type Uniswap datum.
+And there are two constructors, one for the factory and one for each pool.
+So the factory will use the factory constructor and the pool
+will use the pool constructor.
+And as I explained before, the datum contains...
+for the factory contains a list of all liquidity pools that currently exist.
+And the datum for pool contains the liquidity pool that I
+didn't mention in the diagram.
+And what I did mention in the diagram, it contains the amount of liquidity
+that has been minted for this pool.
+Remember that gets updated when somebody adds liquidity or removes liquidity.
+
+.. figure:: img/pic__00172.png
