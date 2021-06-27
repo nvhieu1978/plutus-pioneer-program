@@ -131,3 +131,88 @@ So that's her incentive to set up the pool in the first place.
 The next operation we look at is the add operation where somebody supplies the pool with additional liquidity.
 
 .. figure:: img/pic__00152.png
+
+So let's say that Charlie also believes that the ratio from A to B should be 1:2 and he wants to contribute 400A and 800B.
+He could also have tokens in a different ratio.
+Basically the ratio reflects his belief in the true relative value of the tokens.
+So Charlie wants to add 400 As and 800 Bs, and he creates a transaction
+with two inputs and two outputs.
+The inputs are the pool and his contribution, his additional liquidity
+and the outputs are the updated pool where now his As and Bs have
+been added to the pool tokens and note that now the datum has changed.
+So we had 1,415 liquidity tokens before, and now we have 1,982, and
+the difference the 567 go to Charlie.
+So that's the second output of this transaction.
+And that's the reward to Charlie for providing this liquidity,
+this additional liquidity.
+And there the formula is a bit complicated, but in principle,
+it also works with the product.
+So you check how much the product was before and after
+the tokens have been added.
+And you take into account, how many have already been minted?
+And that also ensures that now basically Alice profits from the fees that Bob
+paid with the swap and Charlie doesn't.
+So this is taking into account, but the specific formula doesn't matter.
+The idea is just that it's fair.
+So people should receive liquidity tokens proportional to their contribution,
+but, if they only add liquidity after a couple of swaps have already happened,
+then they shouldn't profit from the fees that have accumulated in the meantime.
+The next operation we look at is called removed and it allows owners of liquidity
+tokens for a pool to burn some of them.
+
+.. figure:: img/pic__00153.png
+
+So in this example, let's assume that Alice wants to
+burn all her liquidity tokens.
+She could also keep some, she doesn't have to burn on, but in this example, she wants
+to burn all her 1,415 liquidity tokens.
+So for that, she creates another transaction with two inputs and
+two outputs, the inputs are the liquidity token she wants to burn.
+And of course the pool again with the remove redeemer.
+And The outputs are the tokens from the pool that she receives
+in return, so in this case, she would get 1078 A and 1,869 B.
+And the updated pool is the second output.
+So the 1078 A and 1,869 Bs have been removed from the pool and the datum has
+been updated, so the 1,415 liquidity tokens that Alice burnt are now
+subtracted from the 1,982 we had before.
+And we see that 567 are remaining which are exactly those that Charlie owns.
+And the formula for how many tokens Alice gets for burning liquidity
+tokens, is again, somewhat complicated, but it's basically just proportional.
+So we know how many liquidity tokens there are in total 1,982 from the datum.
+And she basically just gets 1,415 over 1,982 of the pool.
+And she gets the tokens in the ratio that they are in now.
+So the 1072, 1,869 should be the same ratio as the 1,500 to 2,619.
+So by burning, you don't change the ratio of the pool.
+The last operation is close and it is for completely closing a pool and removing it.
+
+.. figure:: img/pic__00154.png
+
+
+And this can only happen when the last remaining liquidity tokens are burnt.
+So in our example, Charlie holds all the remaining 567 liquidity tokens, and
+therefore he can close down the pool.
+And in order to do that, he creates a transaction with three inputs.
+One is the factory and note that we only involve the factory when we created the
+pool and now when we close it again, which also means that the contention
+on the factory is not very high.
+So the factory only gets involved when new pools are created, when pools are
+closed down, but once they exist and as long as they are not closed, the
+operations are independent of the factory.
+But if you just need the factory, when we want to update the list
+of existing pools, and by the way, this list is used to ensure that
+there won't be duplicate pools.
+So the create operation that we looked at in the beginning will fail if somebody
+tries to create a pool that already exists for a pair of tokens that already exist.
+So there will always for any given pair of tokens, be at most one pool
+that country against those two tokens.
+Okay, so let's go back to the close operation.
+So the first input is the factory with the close redeemer, second the input
+is the pool that we want to close.
+And third input are all the remaining liquidity tokens, and we get two
+outputs, one is the updated factory.
+So in this case we only had one pool.
+So the list only contains this one pool, and this is now removed from the
+list, and the second output contains of all the remaining tokens, all the
+tokens that were still in the pool by the time it gets closed down.
+So the remaining liquidity tokens are burnt and Charlie gets all the
+remaining tokens from the pool.
