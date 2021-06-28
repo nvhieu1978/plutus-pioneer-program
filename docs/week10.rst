@@ -716,6 +716,9 @@ CID file that I showed you earlier.
 So I will end up with four files W one dot CID until W four dot CID, which
 contains these contract instance IDs for the four contracts, log message, and
 then I just wait until the user types a key and I can shut down the server.
+
+.. figure:: img/pic__00208.png
+
 Let's try this out with cabal run Uniswap minus PAB, and now a lot of stuff is
 happening, remember, first we forge these example tokens ABCD, and then we need
 to distribute them to the other wallets.
@@ -723,16 +726,25 @@ Then we have to start the Uniswap system.
 And for that, we again have to first forge the Uniswap NFT that identifies
 the factory and then create the initial UTXO for the factory that
 contains an empty list of pools.
+
+.. figure:: img/pic__00209.png
+
 And now we see that all the Uniswap user contracts have started for
 wallets one, two, three, four.
 If we look, we see the various files that I wrote, so we can look at those.
 So symbol dot json is the currency symbol of the example tokens I created.
 So I need that to refer to them.
+
+.. figure:: img/pic__00211.png
+
 And then we have these W one to W four.
 So if you look at one of those, that's the contract instance IDs for the
 contract instances for the four wallets.
 And in order to find the correct HTTP endpoints to communicate
 with them, I need these.
+
+.. figure:: img/pic__00212.png
+
 Let's look at the client next.
 So as for the Oracle, I also wrote that in Haskell using the same library for
 doing HTTP requests and in the main program, first of all, I expect one
@@ -747,6 +759,9 @@ decode comes from the aeson library to decode the json back to Haskell data type
 I just check whether there was an error.
 And if not, I invoke this go function where give as parameters
 the CID, the contracts instance ID and the currency symbol.
+
+.. figure:: img/pic__00213.png
+
 And here it's just a loop, I read a command from the console, we get to the
 commands a second, and then depending on the command, I involve various helper
 functions and the commands exactly correspond to the endpoints we have,
@@ -763,6 +778,9 @@ token names for ABCD I just use a character for that, it's easier to type.
 So for example, create Integer Character Integer Character.
 So that means create a liquidity pool with that amount of the token with
 that token name and that amount of the token with this token name and so on.
+
+.. figure:: img/pic__00214.png
+
 This read command, it's just straightforward reads from the
 keyboard and then tries to pass that as a command and if it fails it will
 just recursively read command again.
