@@ -928,12 +928,19 @@ So if we compare, so was 8,000 here so now it's 9,869.
 So she got 1,869 Bs and 1,070 As.
 And I think the last step was that Charlie closes the pool.
 So let's switch to Charlie and let's say, close A B.
+
+.. figure:: img/pic__00229.png
+
 And if now we look for pools, then again, we don't get any.
 So it all seems to work.
 Finally, I want to show how to do this without Haskell, the front-end, and
 just use something like curl because somebody in the Q & A asked for that.
 So let's see, I have For example, status dot SH you will also find
-it in the code folder and I expect one argument, that's the wallet.
+it in the code folder 
+
+.. figure:: img/pic__00230.png
+
+and I expect one argument, that's the wallet.
 And then I just curl to this URL and I interpolate the content of that
 file, the correct wallet file given by the first parameter here and status.
 And because that's very unwieldy, I pass it on at Piper through tool JQ.
@@ -941,10 +948,16 @@ And then I only interested in the current state and dot observable state of the
 corresponding json after resulting json.
 So if I try this right now for wallet one, for example, and see
 that wallet one at the moment has these amounts of the tokens ABCD.
+
+.. figure:: img/pic__00230.png
+
 Okay, and...
 At least that was the last status.
 Maybe it's not up to date.
 So for example, I can do funds let's first look at the funds script.
+
+.. figure:: img/pic__00231.png
+
 So that again, only takes one parameter, one argument, the wallet, and that that's
 a call to this so, same here to put the correct constance, contract instance
 ID there, and then endpoint funds.
@@ -959,6 +972,9 @@ one wants to create a pool again with 1,000 A and 2000 B.
 So we need a request body for the correct parameters for the create params.
 So let's look at this.
 So I say if it's shared script for that.
+
+.. figure:: img/pic__00232.png
+
 So in principle, the call is simple, so now again, contract instance ID
 and now it's endpoint create, but the question is what to write in this body.
 So I have it here.
@@ -969,15 +985,24 @@ What was it one?
 It doesn't matter.
 Let's say wallet one, 1,000 A 2,000 B.
 Okay.
+
+.. figure:: img/pic__00233.png
+
 And now if I query the status, now it hasn't updated yet.
 So it's the, it's still the funds status.
 So let's try again.
+
+.. figure:: img/pic__00234.png
+
 Now I get the created.
 So also I have pools.
 Sorry.
 Pools, wallet one.
 Okay, and now the status.
 Okay.
+
+.. figure:: img/pic__00235.png
+
 Now I see, I have this new liquidity pool with A and B.
 So remains the question, how I got this, this body, because that's complicated.
 It's hard to do this by hand, but if we look back at the Haskell output, What I
@@ -988,6 +1013,9 @@ So if we look at Uniswap client.
 This is in the, in this helper function called endpoint.
 I brushed over that earlier when I show you the code.
 So this is this line here, there write the request body.
+
+.. figure:: img/pic__00237.png
+
 So I get the A, that's just a Haskell value that can be encoded to json and I
 here in this, in this line where I log, I just use encode from the json library
 from sorry, from the aeson library.
