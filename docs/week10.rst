@@ -867,10 +867,17 @@ same for wallet two and for wallet three.
 And I see here that these log messages, that the contract instance
 ID and the symbol for token that I can use, the ABCD read correctly.
 So now what can I do?
-I can, for example, clearing my funds and I see I have A, B, C, D, 1 million
+I can, for example, clearing my funds
+
+.. figure:: img/pic__00221.png
+
+and I see I have A, B, C, D, 1 million
 each and a lot of lovelace, let's see three, six, nine, 100,000 ADA.
 And I can also look for pools, but right now, there shouldn't be
 any, and indeed none are listed.
+
+.. figure:: img/pic__00222.png
+
 So let's switch to wallet one, let's say this is Alice, Bob
 is two and Charlie is three.
 And in the diagrams, we started with Alice setting up a liquidity pool
@@ -878,6 +885,9 @@ for tokens A and B, 1,000 and 2,000.
 So to do this here, we can type, create thousand A.
 Remember that was of type character, so I have to use single quotes and 2000 B.
 And I get the created status spec.
+
+.. figure:: img/pic__00223.png
+
 So it seems to have worked.
 I can query for pools again, and indeed there is one now.
 So I see it has A and B and with the correct amounts, 1,000 and 2,000.
