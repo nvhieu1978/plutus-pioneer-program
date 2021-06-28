@@ -890,24 +890,39 @@ And I get the created status spec.
 
 So it seems to have worked.
 I can query for pools again, and indeed there is one now.
+
+.. figure:: img/pic__00224.png
+
 So I see it has A and B and with the correct amounts, 1,000 and 2,000.
 The next step was that Bob swaps 100 A for Bs.
 So let's do swap 100 A for Bs.
 Okay.
 Let's check how many funds Bob now has and indeed he has 100 less As and 181 more Bs.
+
+.. figure:: img/pic__00225.png
+
 Next Charlie added liquidity.
 I think it was 400 and 800, so we can use add 400 A, 800 B.
 Now check the pools.
 Let me see, it's 1500 and 2619.
 Is that correct, so we have 1000 at the beginning, then 100 for
 add it by Bob and now 400 by Charlie, so I think that's correct.
+
+.. figure:: img/pic__00226.png
+
 Now, if we go back to Alice, she wants to remove her liquidity.
 So let's first create her funds.
+
+.. figure:: img/pic__00227.png
+
 So she has less A and Bs now because she provided them as liquidity for the pool,
 but she has this liquidity token 1,415.
 So for example, she can burn them and get tokens in exchange.
 She doesn't have to burn all, but in the diagram she did.
 So let's do this, so remove 1415 A B, and let's clear her funds again.
+
+.. figure:: img/pic__00228.png
+
 So now she doesn't have liquidity token anymore, but she got As and Bs back.
 So if we compare, so was 8,000 here so now it's 9,869.
 So she got 1,869 Bs and 1,070 As.
