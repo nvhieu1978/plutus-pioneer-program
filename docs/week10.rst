@@ -788,9 +788,15 @@ And if it succeeds, it returns this command.
 Then there are just various helper functions to convert something of
 type command into the corresponding parameter types, like create params
 or add params from the Uniswap module that I showed you earlier.
+
+.. figure:: img/pic__00215.png
+
 This here show coin header and show coin are just to make it look a bit prettier
 when we query the funds or the pools, and then we have the various endpoints
 and that all makes use a helper function.
+
+.. figure:: img/pic__00216.png
+
 Last time, I think for the Oracle I spelled it out, now extracted it.
 So I have these helper functions get status, which we need in
 order to get something back from the contracts and call endpoint.
@@ -819,6 +825,9 @@ of the endpoints, but if there's an error during contract execution,
 I get the error message as a text.
 And if something went wrong, then I end in this third case.
 And with these two it's easy to write all the cases for the endpoints.
+
+.. figure:: img/pic__00217.png
+
 So let's maybe look at one, it get funds.
 So I use this call endpoint helper function that I stress short.
 So for the endpoint named funds, and in this case, the argument, the request body.
@@ -829,9 +838,15 @@ So I wait until I get the right, because in this case,
 there's funds should never fail.
 There's no way that can fail.
 Therefore I can safely wait forever.
+
+.. figure:: img/pic__00218.png
+
 Get pools is similar.
 So it's more or less the same, except that instead of funds, I have pools now.
 And let's look at one more example, for example, for creating a pool.
+
+.. figure:: img/pic__00219.png
+
 So again, I call the endpoint.
 I wait for two seconds.
 Now that could actually go something wrong.
@@ -839,6 +854,7 @@ For example, if I try to create a pool where both coins are the same, or if I
 specify a larger liquidity than I have in my wallet, then I would get an error.
 So in this case, I, if I get an error, I just log it for the console
 and the others are very similar.
+
 Now let's try it out.
 Let's start three instances for wallets one, two, three, and try
 to recreate the scenario from the diagrams in the beginning.
