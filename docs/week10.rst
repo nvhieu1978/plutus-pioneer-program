@@ -594,8 +594,6 @@ or one of the others, and if it was one of the others then recursively user
 endpoints is called again, but in the case of stop not, so if stop endpoint
 is ever called then the contract stops.
 
-
-
 There are also tests for Uniswap contained in this Plutus use cases library,
 but I don't want to look at them now.
 Let's rather look at the Plutus PAB path and how you can
@@ -604,16 +602,25 @@ There is actually one also contained in the Plutus repo.
 It's in the Plutus PAB library and there in the examples folder,
 so there's a Uniswap folder that contains the simulation monad path
 of, of an example, how to do that.
+
+.. figure:: img/pic__00200.png
+
 And I took this and copied it into our Plutus pioneer program repo and
 slightly modified it to make it more suitable for what I wanted to show you.
 When we look at the cabal file for this week's code, there are two executables.
 One Uniswap minus PAB, which will run the PAB Memphis solver, and then
 one Uniswap minus client, which is a simple console based front-end
 for the Uniswap application.
+
+.. figure:: img/pic__00201.png
+
 And you see, in the other modules field there is a module Uniswap
 and that's listed in both.
 So that will contain some common definitions that are used by both paths.
 So let's first look at that.
+
+.. figure:: img/pic__00202.png
+
 First of all, as I explained when I presented the Oracle demo, we need some
 data type that captures the various instances we can run for the wallets.
 And in this case, I have three in it.
@@ -628,7 +635,11 @@ And this task construct is parameterized by a value of type Uniswap,
 which is the result of starting.
 So after having started the system, the result would be of type Uniswap and this
 is then needed to parameterize the client.
-This is just boiler plate, this is this init contract that
+This is just boiler plate, 
+
+.. figure:: img/pic__00203.png
+
+this is this init contract that
 distributes the initial funds.
 So it again makes use of the forge contract that we have seen before.
 And it now producers tokens with token names A, B, C, D and 1 million of each.
@@ -644,6 +655,9 @@ them amongst the wallets.
 This is just a helper function because in order to communicate the various
 contract instance IDs and other things I need, I just use helper files and this
 is the file name for a given wallet.
+
+.. figure:: img/pic__00205.png
+
 So now let's look at the PAB part we will look at the main program in a second,
 just this here is the boiler plate I showed you earlier to actually hook up
 the PAB mechanism with actual contracts.
@@ -659,6 +673,9 @@ at earlier Uniswap start will use the owner endpoint that we looked at earlier.
 And init will use the init contract that we just defined in the Uniswap
 that's just for demonstration to create these initial coins.
 This here is again boiler plate.
+
+.. figure:: img/pic__00206.png
+
 Now we can look at the main program.
 So in the simulator monad, we execute certain things.
 So first we set up the whole system, we start the server and get
