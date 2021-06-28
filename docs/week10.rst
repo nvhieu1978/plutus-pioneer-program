@@ -464,73 +464,56 @@ And we also allow for error, so if there's an error in one of these contracts, t
 
 .. figure:: img/pic__00198.png
 
-Finally, we also have a stop endpoint that simply stops, it doesn't do anything.
-Just, if you look at the definition here at any time you can invoke stop
-or one of the others, and if it was one of the others then recursively user
-endpoints is called again, but in the case of stop not, so if stop endpoint
+Finally, we also have a *stop* endpoint that simply stops, it doesn't do anything. At any time you can invoke *stop* or one of the others, 
+and if it was one of the others then recursively *userEndpoints* is called again, but in the case of *stop* not, so if the *stop* endpoint
 is ever called then the contract stops.
 
-There are also tests for Uniswap contained in this Plutus use cases library,
-but I don't want to look at them now.
-Let's rather look at the Plutus PAB path and how you can
-write a front-end for Uniswap.
-There is actually one also contained in the Plutus repo.
-It's in the Plutus PAB library and there in the examples folder,
-so there's a Uniswap folder that contains the simulation monad path
-of, of an example, how to do that.
+There are also tests for Uniswap contained in this Plutus use-cases library, but we won't look at them now.
+
+Let's rather look at the Plutus PAB part and how you can write a front-end for Uniswap.
+
+There is actually one also contained in the Plutus repo. It's in the plutus-pab library and in the examples folder there's a Uniswap folder that 
+contains an example on how to do that.
 
 .. figure:: img/pic__00200.png
 
-And I took this and copied it into our Plutus pioneer program repo and
-slightly modified it to make it more suitable for what I wanted to show you.
-When we look at the cabal file for this week's code, there are two executables.
-One Uniswap minus PAB, which will run the PAB Memphis solver, and then
-one Uniswap minus client, which is a simple console based front-end
-for the Uniswap application.
+This has been copied it into our Plutus Pioneer Program repo and slightly modified it to make it more suitable for our purposes.
+
+When we look at the Cabal file for this week's code, there are two executables.
+
+One uniswap-pab, which will run the PAB server, and then uniswap-client, which is a simple console based front-end for the Uniswap application.
 
 .. figure:: img/pic__00201.png
 
-And you see, in the other modules field there is a module Uniswap
-and that's listed in both.
-So that will contain some common definitions that are used by both paths.
+You see, in the *other-modules* field there is a module Uniswap and that's listed in both. That contains some common definitions that are used by both parts.
+
 So let's first look at that.
 
 .. figure:: img/pic__00202.png
 
-First of all, as I explained when I presented the Oracle demo, we need some
-data type that captures the various instances we can run for the wallets.
-And in this case, I have three in it.
-Hasn't been mentioned before.
-That has nothing specifically to do with Uniswap.
-This is just used to create some example tokens and
-distribute them in the beginning.
-Then Uniswap start correponds to the Uniswap start or Uniswap owner schema that
-I showed you just now for setting up the whole system and Uniswap user corresponds
-to the other path, to the various endpoints to interact with the system.
-And this task construct is parameterized by a value of type Uniswap,
-which is the result of starting.
-So after having started the system, the result would be of type Uniswap and this
-is then needed to parameterize the client.
-This is just boiler plate, 
+First of all, as we saw with oracle demo, we need some data type that captures the various instances we can run for the wallets. In this case, we have three.
+
+*Init* hasn't been mentioned before, that has nothing specifically to do with Uniswap, this is just used to create some example tokens and distribute them in the beginning.
+
+*UniswapStart* corresponds to the Uniswap start or Uniswap owner schema that we saw just now for setting up the whole system.
+
+*UniswapUser* corresponds to the other part, to the various endpoints to interact with the system. And this class constructor is parameterized by a value of type Uniswap,
+which is the result of starting. So after having started the system, the result would be of type Uniswap and this is then needed to parameterize the client.
 
 .. figure:: img/pic__00203.png
 
-this is this init contract that
-distributes the initial funds.
-So it again makes use of the forge contract that we have seen before.
-And it now producers tokens with token names A, B, C, D and 1 million of each.
-And actually it also multiplies that by the number of wallets.
-So in this case, I want to use four wallets, wallets one to four,
-it's actually 4 million of each of the tokens will be forged.
-And once they have been forged, I sent from the forging wallet to all the
-other wallets, 1 billion of the tokens.
-So one wallet forges 4 million of each, and then loops over the other
+Then is some boiler plate, then this *initContract* function that distributes the initial funds. So it again makes use of *forgeContract* that we have seen before.
+
+And it now produces tokens with token names A, B, C, D with 1 million of each. Actually it also multiplies that by the number of wallets. So in this case, 
+I want to use four wallets, wallets one to four, so it's actually 4 million of each of the tokens that will be forged.
+
+And once they have been forged, they are sent from the forging wallet to all the other wallets. So one wallet forges four million of each, and then loops over the other
 wallets and sends them 1 million each.
-So this is just needed to set up example tokens and distribute
-them amongst the wallets.
-This is just a helper function because in order to communicate the various
-contract instance IDs and other things I need, I just use helper files and this
-is the file name for a given wallet.
+
+So this is just needed to set up example tokens and distribute them amongst the wallets.
+
+The *cidFile* function is just a helper function because in order to communicate the various contract instance IDs and other things we need, we 
+use helper files and this is function gives the file name for a given wallet.
 
 .. figure:: img/pic__00205.png
 
