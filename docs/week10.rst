@@ -858,6 +858,9 @@ and the others are very similar.
 Now let's try it out.
 Let's start three instances for wallets one, two, three, and try
 to recreate the scenario from the diagrams in the beginning.
+
+.. figure:: img/pic__00220.png
+
 So I can start it simply by a cabal run Uniswap minus client.
 And then as command line parameter, I give one for wallet one, and I do the
 same for wallet two and for wallet three.
