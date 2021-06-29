@@ -614,50 +614,39 @@ a certain amount of a second token.
 
 .. figure:: img/pic__00214.png
 
-This read command, it's just straightforward reads from the
-keyboard and then tries to pass that as a command and if it fails it will
-just recursively read command again.
-And if it succeeds, it returns this command.
-Then there are just various helper functions to convert something of
-type command into the corresponding parameter types, like create params
-or add params from the Uniswap module that I showed you earlier.
+The *readCommandIO* function reads from the keyboard and then tries to pass that as a command. If it fails it will just recursively call the read command again. If it 
+succeeds, it returns the command.
+
+Then there are just various helper functions to convert something of type *Command* into the corresponding parameter types, like *CreateParams* 
+or *AddParams* from the Uniswap module that we saw earlier.
 
 .. figure:: img/pic__00215.png
 
-This here show coin header and show coin are just to make it look a bit prettier
-when we query the funds or the pools, and then we have the various endpoints
-and that all makes use a helper function.
+The functions *showCoinHeader* and *showCoin* are just to make it look a bit prettier when we query the funds or the pools, and then we have the various endpoints
+and that all makes use of some helper functions.
 
 .. figure:: img/pic__00216.png
 
-Last time, I think for the Oracle I spelled it out, now extracted it.
-So I have these helper functions get status, which we need in
-order to get something back from the contracts and call endpoint.
-So I'm just using this library, this IQ library as last time.
-And here, this is the interesting part, this is the request.
-So it will be the post request, this is the URL, and I must give
-the instance ID, this is here.
-So this is of type UUID, so I just convert it into a string and then pick
-it to a text because this HTTP library expects text here and the name of the
-endpoint and the request body that depends, of course, what parameters.
-So this is just a parameter here, that's the third argument in the function.
-The response will always be unit and I just check whether
-I get a 200 status code or not.
-And the get status is a get request that invokes this HTTP endpoint
-called status, again with the CID.
-And it doesn't take a request body and I have to tell it what I'm dealing with.
-So that's why I need this Uniswap contracts type here.
-And that's also why this Uniswap client executable also needs
+There is *getStatus*, which we need in order to get something back from the contracts, and *callEndpoint* which uses the *Req* library, just as last time.
+
+The interesting part is the request. It will be the post request, and we must give the instance ID. This is of type UUID, so we just convert 
+it into a string and then pack it to a text because this HTTP library expects *Text*.
+
+The request body depends on the third argument in the function.
+
+The response will always be *Unit* and we just check whether we get a 200 status code or not.
+
+The *getStatus* is a get request that invokes the *status* HTTP endpoint, again with the CID.
+
+We have to tell it what we're dealing with so that's why we need the *UniswapContracts* type, and that's also why this Uniswap client executable also needs
 access to this Uniswap module.
-And then I just check if the state is empty, which happens right in the
-beginning because before in anything else told anything to the state, then I wait a
-second and recurse and if there's a state, so it's just E, then I know that this is
-of type either text a user contract state.
-Recall this user contract state that was one constructor for each
-of the endpoints, but if there's an error during contract execution,
-I get the error message as a text.
-And if something went wrong, then I end in this third case.
-And with these two it's easy to write all the cases for the endpoints.
+
+And then we just check if the state is empty, which happens right in the beginning because that is before anything has told anything to the state. Then we wait a
+second and recurse and if there's a state (if it's *Just e*), then we know that this is of type *Either Text UserContractState*.
+
+Recall this UserContractState had one constructor for each of the endpoints, but if there's an error during contract execution, we get the error message as a *Text*.
+
+And if something went wrong, then we end in the third case. With these two functions - *getStatus* and *getEndpoint* - it's easy to write all the cases for the endpoints.
 
 .. figure:: img/pic__00217.png
 
