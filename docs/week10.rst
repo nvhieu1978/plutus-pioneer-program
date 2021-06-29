@@ -696,180 +696,159 @@ We can, for example, query our funds.
 
 And we see that we have A, B, C, D with 1 million each and 100,000 Ada.
 
-And I can also look for pools, but right now, there shouldn't be
-any, and indeed none are listed.
+We can also look for pools, but right now, there shouldn't be any, and indeed none are listed.
 
 .. figure:: img/pic__00222.png
 
-So let's switch to wallet one, let's say this is Alice, Bob
-is two and Charlie is three.
-And in the diagrams, we started with Alice setting up a liquidity pool
-for tokens A and B, 1,000 and 2,000.
-So to do this here, we can type, create thousand A.
-Remember that was of type character, so I have to use single quotes and 2000 B.
-And I get the created status spec.
+So let's switch to Wallet 1, let's say this is Alice, Bob is 2 and Charlie is 3.
+
+In the diagrams, we started with Alice setting up a liquidity pool for 1000 tokens A and 2000 B tokens.
+
+So to do this here, we can type
+
+.. code:: haskell
+
+      Create 1000 'A' 2000 'B'
+
+Remember that was of type *Char*, so we use single quotes.
+
+We get the created status spec.
 
 .. figure:: img/pic__00223.png
 
-So it seems to have worked.
-I can query for pools again, and indeed there is one now.
+So it seems to have worked. We can query for pools again, and indeed there is one now.
 
 .. figure:: img/pic__00224.png
 
-So I see it has A and B and with the correct amounts, 1,000 and 2,000.
-The next step was that Bob swaps 100 A for Bs.
-So let's do swap 100 A for Bs.
-Okay.
-Let's check how many funds Bob now has and indeed he has 100 less As and 181 more Bs.
+We see that it has A and B and with the correct amounts, 1000 and 2000 respectively.
+
+The next step was that Bob swaps 100A for Bs. So, in the console that is running Bob's wallet, we can write
+
+.. code:: haskell
+
+     Swap 100 'A' 'B'
+
+Let's check how many funds Bob now has. As expected, he has 100 fewer As and 181 as many Bs.
 
 .. figure:: img/pic__00225.png
 
-Next Charlie added liquidity.
-I think it was 400 and 800, so we can use add 400 A, 800 B.
-Now check the pools.
-Let me see, it's 1500 and 2619.
-Is that correct, so we have 1000 at the beginning, then 100 for
-add it by Bob and now 400 by Charlie, so I think that's correct.
+Next Charlie added liquidity. 
+
+.. code:: haskell
+
+      Add 400 'A' 800 'B'
+      
+Now we check the pools again.
+
+It's 1500 and 2619. We had 1000 at the beginning, then 100 where added by Bob and now 400 by Charlie.
 
 .. figure:: img/pic__00226.png
 
-Now, if we go back to Alice, she wants to remove her liquidity.
-So let's first create her funds.
+Now, if we go back to Alice, she wants to remove her liquidity. So let's first query her funds.
 
 .. figure:: img/pic__00227.png
 
-So she has less A and Bs now because she provided them as liquidity for the pool,
-but she has this liquidity token 1,415.
-So for example, she can burn them and get tokens in exchange.
-She doesn't have to burn all, but in the diagram she did.
-So let's do this, so remove 1415 A B, and let's clear her funds again.
+So she has less A and Bs now because she provided them as liquidity for the pool, but she has 1415 of the liquidity token.
+
+So for example, she can burn the liquidity tokens and get tokens in exchange. She doesn't have to burn all, but in the diagram she did.
+So let's do this, so 
+
+.. code:: haskell
+      
+      Remove 1415 'A' 'B'
+
+And let's query her funds again.      
 
 .. figure:: img/pic__00228.png
 
 So now she doesn't have liquidity token anymore, but she got As and Bs back.
-So if we compare, so was 8,000 here so now it's 9,869.
-So she got 1,869 Bs and 1,070 As.
-And I think the last step was that Charlie closes the pool.
-So let's switch to Charlie and let's say, close A B.
+
+So she received 1869Bs and 1070 As.
+
+The last step was that Charlie closes the pool. So let's switch to Charlie
+
+.. code:: haskell
+
+      Close 'A' 'B'
 
 .. figure:: img/pic__00229.png
 
-And if now we look for pools, then again, we don't get any.
-So it all seems to work.
-Finally, I want to show how to do this without Haskell, the front-end, and
-just use something like curl because somebody in the Q & A asked for that.
-So let's see, I have For example, status dot SH you will also find
-it in the code folder 
+And if now we look for pools, then again, we don't get any. So it all seems to work.
+
+Finally, we will look at how to use the front-end without Haskell and just use something like curl.
+
+Let's look at the file *status.sh* which you will find in the code folder.
 
 .. figure:: img/pic__00230.png
 
-and I expect one argument, that's the wallet.
-And then I just curl to this URL and I interpolate the content of that
-file, the correct wallet file given by the first parameter here and status.
-And because that's very unwieldy, I pass it on at Piper through tool JQ.
-And then I only interested in the current state and dot observable state of the
-corresponding json after resulting json.
-So if I try this right now for wallet one, for example, and see
-that wallet one at the moment has these amounts of the tokens ABCD.
+This script expects one argument, that's the wallet.
+
+Then we just *curl* to this URL and interpolate the content of the correct wallet file given by the first parameter.
+
+And because the output is very unwieldy, we pipe it through *jq* and get the current state and observable state of the resulting json.
+
+So if I try this right now for Wallet 1, for example, we see that wallet one at the moment has these amounts of the tokens ABCD.
 
 .. figure:: img/pic__00230.png
 
-Okay, and...
-At least that was the last status.
-Maybe it's not up to date.
-So for example, I can do funds let's first look at the funds script.
+At least that was the last status. Maybe it's not up to date.
+
+Let's also look at the *funds.sh* script.
 
 .. figure:: img/pic__00231.png
 
-So that again, only takes one parameter, one argument, the wallet, and that that's
-a call to this so, same here to put the correct constance, contract instance
-ID there, and then endpoint funds.
-And this is a post request, so I need a request body.
-So this is unit because the funds endpoint doesn't require any
-arguments except the unit argument.
-So now that I've invoked that if I query status again, it should have been updated.
-Probably it hasn't changed yet.
-Bit more interesting is what to do with the post requested.
-We have interesting arguments, for example, if now, wallet
-one wants to create a pool again with 1,000 A and 2000 B.
-So we need a request body for the correct parameters for the create params.
-So let's look at this.
-So I say if it's shared script for that.
+So that again, only takes one parameter, one argument, the wallet, in order to put the correct instance ID in the URL, and then uses the *funds* endpoint.
+
+And this is a POST request, so we need a request body. This is *Unit* because the funds endpoint doesn't require any arguments except the *Unit* argument.
+
+A bit more interesting is what to do with the post request that do have interesting arguments. For example, if now, Wallet 1 wants to create a pool 
+again with 1000A and 2000 B. In that case we need a request body for the correct parameters for the *CreateParams*.
+
+So let's look at this in *create.sh*
 
 .. figure:: img/pic__00232.png
 
-So in principle, the call is simple, so now again, contract instance ID
-and now it's endpoint create, but the question is what to write in this body.
-So I have it here.
-So I use similar arguments to in the Haskell implementation.
-So first the wallet and then the A amount, A token, B amount, B token.
-So maybe we should first check whether it works, so I can do create wallet.
-What was it one?
-It doesn't matter.
-Let's say wallet one, 1,000 A 2,000 B.
-Okay.
+In principle, the curl is simple, so now again, contract instance ID but now with endpoint *create*. But the question is what to write in this body.
+
+We use similar arguments to in the Haskell implementation. So first the wallet and then the A amount, A token, B amount, and B token.
+
+So maybe we should first check whether it works.
+
+.. code:: haskell
+
+      ./create.sh 1 1000 A 2000 B
 
 .. figure:: img/pic__00233.png
 
-And now if I query the status, now it hasn't updated yet.
-So it's the, it's still the funds status.
-So let's try again.
+And now if we wait a few seconds and then query the status, it should have updated.
 
 .. figure:: img/pic__00234.png
 
-Now I get the created.
-So also I have pools.
-Sorry.
-Pools, wallet one.
-Okay, and now the status.
-Okay.
+We can now run
+
+.. code:: haskell
+
+      ./status.sh 1
 
 .. figure:: img/pic__00235.png
 
-Now I see, I have this new liquidity pool with A and B.
-So remains the question, how I got this, this body, because that's complicated.
-It's hard to do this by hand, but if we look back at the Haskell output, What I
-did was here, for example, for create, I always write the URL, where do the
-request to, and also the request body.
-And we can actually check the code for this.
-So if we look at Uniswap client.
-This is in the, in this helper function called endpoint.
-I brushed over that earlier when I show you the code.
-So this is this line here, there write the request body.
+Now we have this new liquidity pool with A and B. 
+
+So the remaining question is, how did we get the JSON body for the curl call? It's hard to do this by hand, but if we look back at the Haskell output, what we
+did was here, for example, for create, to always write the URL we are calling and also the request body.
+
+And we can check the code for this. If we look at uniswap-client. It is in the helper function *callEndpoint* on lines 216 and 217.
 
 .. figure:: img/pic__00237.png
 
-So I get the A, that's just a Haskell value that can be encoded to json and I
-here in this, in this line where I log, I just use encode from the json library
-from sorry, from the aeson library.
-So this is now a byte string.
-And in order to write that to the console, I need two strings, so I use something
-from the byte string library it's called a byte string dot lazy dot character
-eight, for character eight encoding.
-And so I unpack this byte string to a string and then I log it.
-And that's the way I would recommend in order to figure
-out what requests bodies to use.
-I mean, you don't of course have to write a whole program, you can
-also do that in the repl so you just need a value of the correct type.
-And then use aeson to encode it and look at the result and then you see
-the shape of the json that is expected, and then you can use that and then it's
-straightforward to do the call request.
-So we don't need a Haskell backend.
-You, I mean, once you have curl you can use anything like JavaScript,
-for example, to write the front-end.
-Okay, that concludes the lecture.
-And I think because it's the last lecture, I also don't want to give you homework,
-of course you can, if you like play around with this demo and set up your
-own liquidity pools and do some swaps, and of course, whatever you want, I
-mean, you for example, can try to write a JavaScript front-end, a nice graphical
-UI, or you could also as a challenge, think about whether it is possible
-to, use the state machine mechanism instead of doing it by hand, as I did.
-So this, as I said was the last regular lecture of this course.
-I thank you very much again, for all your hard work and your
-attention and your enthusiasm.
-And I hope you learned a lot and are eager to try it out once
-plutus is available on the Testnet.
-And then later on the main net.
-And I hope to see you again soon in, in a future course about some other
-technologies like Atala PRISM or Marlowe.
-Thank you very much again, it was a great pleasure teaching this course.
+So we get the *a*, that's just a Haskell value with an instance of *ToJSON* so that can be encoded to JSON, and we just use encode from the Aeson library.
+This is now a byte string, but in order to write that to the console, we need two strings, so we use something from the ByteString library 
+
+.. code:: haskell
+      
+      Data.ByteString.Lazy.Char8
+      
+And we unpack this ByteString to a string and then log it. So this is a good way to figure out what requests bodies to use.
+
+You don't, of course, have to write a whole program, you can also do that in the REPL. You just need a value of the correct type and then use Aeson to 
+encode it and look at the result and then you see the shape of the json that is expected.
