@@ -502,7 +502,7 @@ which is the result of starting. So after having started the system, the result 
 
 .. figure:: img/pic__00203.png
 
-Then is some boiler plate, then this *initContract* function that distributes the initial funds. So it again makes use of *forgeContract* that we have seen before.
+Then there is some boiler plate, then this *initContract* function that distributes the initial funds. So it again makes use of *forgeContract* that we have seen before.
 
 And it now produces tokens with token names A, B, C, D with 1 million of each. Actually it also multiplies that by the number of wallets. So in this case, 
 I want to use four wallets, wallets one to four, so it's actually 4 million of each of the tokens that will be forged.
@@ -517,64 +517,45 @@ use helper files and this is function gives the file name for a given wallet.
 
 .. figure:: img/pic__00205.png
 
-So now let's look at the PAB part we will look at the main program in a second,
-just this here is the boiler plate I showed you earlier to actually hook up
-the PAB mechanism with actual contracts.
-So this is all boiler plate, and it uses this Uniswap contracts that are justified
-with the three constructors in it Uniswap start and Uniswap user, and in this
-part, this is linked with the schema.
-So Uniswap user will use the Uniswap user schema that we defined before.
-Uniswap start will use the Uniswap owner schema that we defined before and in it
-we'll use a schema without endpoints.
-And this part here connects these constructors with actual contracts.
-So Uniswap user with argument US will use the user endpoints that we looked
-at earlier Uniswap start will use the owner endpoint that we looked at earlier.
-And init will use the init contract that we just defined in the Uniswap
-that's just for demonstration to create these initial coins.
-This here is again boiler plate.
+So now let's look at the PAB part. 
+
+First there is the boiler plate that we saw earlier to actually hook up the PAB mechanism with actual contracts. It uses the Uniswap contracts that we just 
+defined with the three constructors *Init*, *UniswapStart* and *UniswapUser*.
+
+So, *UniswapUser* user will use the *UniswapUser* schema that we defined before, *UniswapStart* will use the *UniswapOwner* schema that we defined before and 
+*Init* will use a schema without endpoints.
+
+And we connect these constructors with actual contracts. So *UniswapUser* with argument *us* will use the *userEndpoints* that we looked at earlier,
+*UniswapStart* will use the *ownerEndpoint*, and *Init* will use the *initContract* that we just defined, and that's just for demonstration to create these initial coins.
 
 .. figure:: img/pic__00206.png
 
 Now we can look at the main program.
-So in the simulator monad, we execute certain things.
-So first we set up the whole system, we start the server and get
-the handle to shut it down again.
-And then in the end we just wait until the user types a key
-and then we shut it down again.
-Okay.
-So first thing we do is wallet one activates this init contract.
-So we know from looking at the code what that will do, it will mint all
-these example tokens, ABCD, 4 million of each, and then distribute them.
-So that wallets one to four end up with 1 million of each of the
-four different tokens and we wait.
-So, I mean, this will concurrently start this contract, but then immediately
-continue at one block, so we use this wait for state that I explained when
-we talked about Oracles to wait until init returns and what init will do is
-it will write the currency symbol of the forged example tokens into the state.
-So we wait until we see that and then we remember it and we wait until
-this init contract has finished.
-And then we write the currency symbol into a file that I called symbol dot json.
-And we just use encode that comes from data dot aeson, the json
-standard json library for Haskell.
-So we take this currency symbol and encode it to json and write it in
-this file and we write a log message.
-Then again for wallet one, we start the Uniswap system.
-So we use the Uniswap start constructor and we again use wait for state to
-wait until we get the result and the result of the Uniswap start, I explained
-it earlier will be a value of type Uniswap, and we need that value in order
-to parameterize the user contracts.
-So we wait until we get this, I called it US and will log and now Uniswap, the
-system is running and now we can start the user instances for all the wallets.
-So I loop all our wallets and activate the Uniswap user contract which is
-now parameterized by the US value I got in the previous step here.
-Okay.
-Now I have these handles and in order to interact, to communicate
-from the front-end with the server, I need these handles.
-So I write them into a file and this is where you says helper function
-CID file that I showed you earlier.
-So I will end up with four files W one dot CID until W four dot CID, which
-contains these contract instance IDs for the four contracts, log message, and
-then I just wait until the user types a key and I can shut down the server.
+
+So in the *Simulator* monad, we execute certain things. First we set up the whole system, we start the server and get the handle to shut it down again.
+
+The first thing is that Wallet 1 activates the *Init* contract. We know from looking at the code what that will do, it will mint all these example tokens, ABCD, 
+4 million of each, and then distribute them so that wallets one to four end up with 1 million of each of the four different tokens.
+
+This will concurrently start this contract, but then immediately continue - it won't block - so we use the *waitForState* that we saw when
+we talked about oracles, to wait until *Init* returns.
+
+What *Init* will do is that it will write the currency symbol of the forged example tokens into the state. So we wait until we see that and then we 
+remember it and we wait until the *Init* contract has finished.
+
+And then we write the currency symbol into the file *symbol.json*. We use the *encode* function from Data.Aeson, the json standard json library for Haskell.
+
+Then again for Wallet 1, we start the Uniswap system. So we use the *UniswapStart* constructor and we again use *waitForState* to wait until we 
+get the result. The result of the *UniswapStart* as we saw earlier will be a value of type Uniswap, and we need that value in order to parameterize the user contracts.
+
+So we wait until we get this, and call it *us*, and now Uniswap, the system is running and now we can start the user instances for all the wallets.
+
+So we loop over all wallets and activate the *UniswapUser* contract which is now parameterized by the *us* value we got in the previous step here.
+
+Now we have these handles and in order to interact, to communicate, from the front-end with the server, we need these handles. So we write them 
+into a file and this is where we use the helper function *cidFile* that we saw earlier.
+
+So we will end up with four files *w1.cid* through to *w4.cid*, which contain these contract instance IDs for the four contracts. Then we just wait until the user types a key and then we can shut down the server.
 
 .. figure:: img/pic__00208.png
 
