@@ -650,51 +650,52 @@ And if something went wrong, then we end in the third case. With these two funct
 
 .. figure:: img/pic__00217.png
 
-So let's maybe look at one, it get funds.
-So I use this call endpoint helper function that I stress short.
-So for the endpoint named funds, and in this case, the argument, the request body.
-The argument, the request body is just unit.
-And I wait for two seconds and then I use this get status helper function.
-And if I get a right, then I show the funds that I got and otherwise I recurse.
-So I wait until I get the right, because in this case,
-there's funds should never fail.
-There's no way that can fail.
-Therefore I can safely wait forever.
+So let's maybe look at one, *getFunds*. We use the *callEndpoint* helper function that we just saw. For the endpoint named "funds", and in this case, the argument, 
+the request body, is just *Unit*.
+
+We wait for two seconds and then use the *getStatus* helper function. If we get a *Right*, then we show the funds, otherwise we recurse.
+
+So we wait until we get the *Right*, because in this case "funds" should never fail. There's no way that can fail, therefore we can safely wait forever.
 
 .. figure:: img/pic__00218.png
 
-Get pools is similar.
-So it's more or less the same, except that instead of funds, I have pools now.
-And let's look at one more example, for example, for creating a pool.
+The *getPools* function is similar. It's more or less the same, except that instead of "funds", we have "pools".
+
+Let's look at one more example, for creating a pool.
 
 .. figure:: img/pic__00219.png
 
-So again, I call the endpoint.
-I wait for two seconds.
-Now that could actually go something wrong.
-For example, if I try to create a pool where both coins are the same, or if I
-specify a larger liquidity than I have in my wallet, then I would get an error.
-So in this case, I, if I get an error, I just log it for the console
-and the others are very similar.
+Again we call the endpoint and we wait for two seconds. Here something could actually go wrong. For example, if we try to create a pool where both 
+coins are the same, or if we specify a larger liquidity than exists in the wallet, then we would get an error.
+
+So in this case, if we get an error, we just log it to the console.
+
+The cases for all the other endpoints are very similar.
 
 Now let's try it out.
-Let's start three instances for wallets one, two, three, and try
-to recreate the scenario from the diagrams in the beginning.
+
+Let's start three instances for wallets one, two and three, and try to recreate the scenario from the diagrams at the beginning.
+
+We start it simply by using *cabal run* with a command line parameter for the number of the wallet.
+
+.. code:: haskell
+      
+      cabal run uniswap-client -- 1
+
+And we do the same for wallets 2 and 3.
 
 .. figure:: img/pic__00220.png
 
-So I can start it simply by a cabal run Uniswap minus client.
-And then as command line parameter, I give one for wallet one, and I do the
-same for wallet two and for wallet three.
-And I see here that these log messages, that the contract instance
-ID and the symbol for token that I can use, the ABCD read correctly.
-So now what can I do?
-I can, for example, clearing my funds
+Here we see the log messages for the contract instance ID and the symbol for token that we can use.
+
+So what can we do?
+
+We can, for example, query our funds.
 
 .. figure:: img/pic__00221.png
 
-and I see I have A, B, C, D, 1 million
-each and a lot of lovelace, let's see three, six, nine, 100,000 ADA.
+And we see that we have A, B, C, D with 1 million each and 100,000 Ada.
+
 And I can also look for pools, but right now, there shouldn't be
 any, and indeed none are listed.
 
