@@ -586,38 +586,31 @@ We need these in order to find the correct HTTP endpoints to communicate with th
 
 Let's look at the client next.
 
-So as for the Oracle, I also wrote that in Haskell using the same library for
-doing HTTP requests and in the main program, first of all, I expect one
-command line parameter, just a number from one to four, so that the main program
-knows for which wallet it's running.
-Then I read the corresponding CID file to get the contract
-instance ID for that wallet.
-And I read this symbol dot json file to get the currency
-symbol of the example tokens.
-I read that with something, read file coming from the byte string library, and
-decode comes from the aeson library to decode the json back to Haskell data type,
-I just check whether there was an error.
-And if not, I invoke this go function where give as parameters
-the CID, the contracts instance ID and the currency symbol.
+As for the oracle, this is also written that in Haskell using the same library for doing HTTP requests.
+
+In the main program we expect one command line parameter, just a number from one to four, so that the main program knows for which wallet it's running.
+
+Then we read the corresponding CID file to get the contract instance ID for that wallet. We read this *symbol.json* file to get the currency symbol of 
+the example tokens. We use the *readFile* function the ByteString library, and *decode* comes from the Data.Aeson library to 
+decode the json back to Haskell data type.
+
+We check whether there was an error, and if not, we invoke the *go* function where we pass the contract instance ID and the currency symbol.
 
 .. figure:: img/pic__00213.png
 
-And here it's just a loop, I read a command from the console, we get to the
-commands a second, and then depending on the command, I involve various helper
-functions and the commands exactly correspond to the endpoints we have,
-except for stop, I didn't implement stop.
-So we can carry our funds, we can look for existing pools, we can create
-a pool, we can add liquidity to a pool, we can remove liquidity from
+And then it's just a loop. We read a command from the console, and then depending on the command, we involve various helper functions. The 
+commands exactly correspond to the endpoints we have, except for stop, which is not implemented.
+
+So we can query our funds, we can look for existing pools, we can create a pool, we can add liquidity to a pool, we can remove liquidity from
 a pool, we can close a pool, and we can swap, which is the whole point.
-And commands, it's just this.
-So for each of those, we have a command and in order to enter amounts and currency
-tokens, currency symbols and token names.
-Because the currency symbol will always be the CS, we are only using
-our example tokens, I don't need that and for the token name, because the
-token names for ABCD I just use a character for that, it's easier to type.
-So for example, create Integer Character Integer Character.
-So that means create a liquidity pool with that amount of the token with
-that token name and that amount of the token with this token name and so on.
+
+So for each of those, we have a constructor in the *Command* data type.
+
+Because the currency symbol will always be *cs* - our example tokens, we don't need to parameterise the currency symbol. And because the
+token names are just A, B, C and D we can just use a character for that.
+
+So for example, *Create Integer Character Integer Character* means create a liquidity pool with a certain amount of a given token and 
+a certain amount of a second token.
 
 .. figure:: img/pic__00214.png
 
