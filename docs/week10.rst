@@ -555,37 +555,37 @@ So we loop over all wallets and activate the *UniswapUser* contract which is now
 Now we have these handles and in order to interact, to communicate, from the front-end with the server, we need these handles. So we write them 
 into a file and this is where we use the helper function *cidFile* that we saw earlier.
 
-So we will end up with four files *w1.cid* through to *w4.cid*, which contain these contract instance IDs for the four contracts. Then we just wait until the user types a key and then we can shut down the server.
+So we will end up with four files *w1.cid* through to *w4.cid*, which contain these contract instance IDs for the four contracts. 
+
+Then we just wait until the user types a key and then we can shut down the server.
 
 .. figure:: img/pic__00208.png
 
-Let's try this out with cabal run Uniswap minus PAB, and now a lot of stuff is
-happening, remember, first we forge these example tokens ABCD, and then we need
-to distribute them to the other wallets.
-Then we have to start the Uniswap system.
-And for that, we again have to first forge the Uniswap NFT that identifies
-the factory and then create the initial UTXO for the factory that
-contains an empty list of pools.
+Let's try this out with *cabal run uniswap-pab*.
+
+A lot of stuff is happening. Remember, first we forge these example tokens ABCD, and then we need to distribute them to the other wallets. 
+
+Then we have to start the Uniswap system. And for that, we again have to first forge the Uniswap NFT that identifies the factory and then create the initial 
+UTxO for the factory that contains an empty list of pools.
 
 .. figure:: img/pic__00209.png
 
-And now we see that all the Uniswap user contracts have started for
-wallets one, two, three, four.
-If we look, we see the various files that I wrote, so we can look at those.
-So symbol dot json is the currency symbol of the example tokens I created.
-So I need that to refer to them.
+Now we see that all the *UniswapUser* contracts have started for each of the the four wallets.
+
+If we look, we see the various files, so we can look at those. 
+
+So *symbol.json* is the currency symbol of the example tokens and we need that to refer to them.
 
 .. figure:: img/pic__00211.png
 
-And then we have these W one to W four.
-So if you look at one of those, that's the contract instance IDs for the
-contract instances for the four wallets.
-And in order to find the correct HTTP endpoints to communicate
-with them, I need these.
+And then we have these *w1.cid* - *w4.cid* files. If you look at one of those, they hold the contract instance IDs for the contract instances for the four wallets.
+
+We need these in order to find the correct HTTP endpoints to communicate with them.
 
 .. figure:: img/pic__00212.png
 
 Let's look at the client next.
+
 So as for the Oracle, I also wrote that in Haskell using the same library for
 doing HTTP requests and in the main program, first of all, I expect one
 command line parameter, just a number from one to four, so that the main program
