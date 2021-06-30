@@ -53,13 +53,13 @@ myTrace = do
     callEndpoint @"bid" h2 $ BidParams
         { bpCurrency = assetSymbol
         , bpToken    = assetToken
-        , bpBid      = 3
+        , bpBid      = 3000000
         }
     void $ Emulator.waitNSlots 1
     callEndpoint @"bid" h3 $ BidParams
         { bpCurrency = assetSymbol
         , bpToken    = assetToken
-        , bpBid      = 5
+        , bpBid      = 5000000
         }
     s <- waitUntilSlot 20
     Extras.logInfo $ "reached slot " ++ show s
@@ -68,5 +68,6 @@ myTrace = do
             cpCurrency = assetSymbol
           , cpToken    = assetToken
         }
+    void $ Emulator.waitNSlots 1
 
 
