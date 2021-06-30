@@ -14,11 +14,13 @@ library
                      , Week01.Trace
   build-depends:       aeson
                      , base ^>=4.14.1.0
+                     , row-types >= 1.0.1.0
                      , containers
                      , playground-common
                      , plutus-contract
                      , plutus-ledger
                      , plutus-tx-plugin
+                     , plutus-ledger-api
                      , plutus-tx
                      , text
                      , freer-extras

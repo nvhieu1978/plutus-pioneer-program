@@ -36,6 +36,8 @@ import           Data.Map             as Map
 import           Data.Text            (pack, Text)
 import           GHC.Generics         (Generic)
 import           Plutus.Contract      hiding (when)
+import           Plutus.V1.Ledger.Interval        (contains)
+import qualified Ledger.TimeSlot                  as TimeSlot
 import qualified PlutusTx             as PlutusTx
 import           PlutusTx.Prelude     hiding (Semigroup(..), unless)
 import qualified PlutusTx.Prelude     as Plutus
@@ -192,10 +194,10 @@ mkAuctionValidator ad redeemer ctx =
                 _   -> traceError "expected exactly one refund output"
 
     correctBidSlotRange :: Bool
-    correctBidSlotRange = to (aDeadline auction) `contains` txInfoValidRange info
+    correctBidSlotRange = TimeSlot.slotRangeToPOSIXTimeRange (to (aDeadline auction)) `contains` txInfoValidRange info
 
     correctCloseSlotRange :: Bool
-    correctCloseSlotRange = from (aDeadline auction) `contains` txInfoValidRange info
+    correctCloseSlotRange = TimeSlot.slotRangeToPOSIXTimeRange (from (aDeadline auction)) `contains` txInfoValidRange info
 
     getsValue :: PubKeyHash -> Value -> Bool
     getsValue h v =
