@@ -50,7 +50,7 @@ import           Ledger.Ada           as Ada
 import           Playground.Contract  (ensureKnownCurrencies, printSchemas, stage, printJson)
 import           Playground.TH        (mkKnownCurrencies, mkSchemaDefinitions)
 import           Playground.Types     (KnownCurrency (..))
-import           Prelude              (Semigroup (..))
+import           Prelude              (Semigroup (..), Show, String, show)
 import           Schema               (ToSchema)
 import           Text.Printf          (printf)
 
