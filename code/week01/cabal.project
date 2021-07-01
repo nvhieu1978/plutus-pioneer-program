@@ -23,7 +23,7 @@ source-repository-package
     plutus-tx-plugin
     prettyprinter-configurable
     quickcheck-dynamic
-  tag: 01600a3dd38f3a5e8ca53d53d100c768b7d4b3d7
+  tag: e3add16e263446ed5699371f9cd18e28def301b5
 
 -- The following sections are copied from the 'plutus' repository cabal.project at the revision
 -- given above.
