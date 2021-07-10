@@ -3,10 +3,12 @@ Week 02 - Validation
 
 .. note::
       This is a written version of `Lecture
-      #2 <https://youtu.be/E5KRk5y9KjQ>`__.
+      #2, Iteration #2 <https://www.youtube.com/watch?v=sN3BIa3GAOc>`__.
 
       It covers low-level, untyped on-chain validation scripts and high-level,
       typed on-chain validation scripts.
+
+      The code in this lecture uses the Plutus commit 81ba78edb1d634a13371397d8c8b19829345ce0d      
 
 Before We Start
 ---------------
@@ -66,59 +68,56 @@ is validated by a node, the node will run the script and then, depending
 on the result of the script, decide whether the transaction is valid or
 not.
 
-And recall that there were three more additions:
+And recall that two were three more additions:
 
 1. Instead of just having signatures on transactions, we have so-called
    Redeemers - arbitrary pieces of data.
 2. On the UTxO output side, we have an additional arbitrary piece of
    data called Datum, which you can think of as a little piece of state
    that sits on the UTxO.
-3. Finally, we have the context. There are various choices of what this
-   context can be. It can be very restrictive, consisting just of the
-   Redeemer (as in Bitcoin), or very global, consisting of the whole
-   state of the blockchain (as in Ethereum). In Cardano, it is the
-   transaction that is being validated, including all its inputs and
-   outputs.
+
+Finally, we have the context. There are various choices of what this context can be. It can be very restrictive, consisting just of the Redeemer (as in Bitcoin), or very global, consisting of the whole 
+state of the blockchain (as in Ethereum). In Cardano, it is the transaction that is being validated, including all its inputs and outputs.
 
 So, there are three pieces of data that a Plutus script gets. The Datum,
-sitting at the UTxO, the Redeemer coming from the input and the
-validation, and the Context, consisting of the transaction being
+sitting at the UTxO, the redeemer, coming from the input and the
+validation, and the context, consisting of the transaction being
 validated and its inputs and outputs.
 
-In a concrete implementation like Plutus, these pieces of information
-need to be represented by a concrete data type - a Haskell data type. As
-it happens, the choice was made to use the same data type for all three
-of them. At least at the low-level implementation.
+In a concrete implementation like Plutus, these pieces of information need to be represented by a concrete data type - a Haskell data type. As it happens, 
+the choice was made to use the same data type for all three of them. At least at the low-level implementation.
 
-We will look at that first, but in real life nobody would actually use
-this low-level. There are more convenient ways to use more suitable data
+We will look at that first, but in real life nobody would actually use this low-level approach. There are more convenient ways to use more suitable data
 types for these things, and we will come to that later in this lecture.
 
 PlutusTx.Data
 -------------
 
-As mentioned, the Datum, Redeemer and Context share a data type. That
-data type is defined in the package *plutus-tx*, in the module
-`*PlutusTx.Data* <https://github.com/input-output-hk/plutus/blob/master/plutus-tx/src/PlutusTx/Data.hs>`__.
+As mentioned, the datum, redeemer and context share a data type. 
+
+That data type is defined in the package *plutus-core*, in the module
+
+.. code:: haskell
+
+      module PlutusCore.Data
+
 It is called, simply, *Data*.
 
 .. code:: haskell
 
       data Data =
-            Constr Integer [Data]
+           Constr Integer [Data]
          | Map [(Data, Data)]
          | List [Data]
          | I Integer
          | B BS.ByteString
          deriving stock (Show, Eq, Ord, Generic)
-         deriving anyclass (Serialise, NFData)
+         deriving anyclass (NFData)
 
 It has five constructors.
 
 -  *Constr* takes an Integer and, recursively, a list of *Data*
--  *Map* takes a list of pairs of *Data*. You can think of this as a
-   lookup table of key-value pairs where both the key and the value are
-   of type *Data*
+-  *Map* takes a list of pairs of *Data*. You can think of this as a lookup table of key-value pairs where both the key and the value are of type *Data*
 -  *List* takes a list of *Data*
 -  *I* takes a single Integer
 -  *B* takes a Bytestring
