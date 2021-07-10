@@ -227,57 +227,46 @@ input - the datum, the redeemer and the context, respectively, which, at the low
 
       mkValidator :: Data -> Data -> Data -> ()
 
-Somewhat surprisingly, the result of the function is (). This is the
-Haskell Unit type, similar to *void* in some other languages, like C++
+Somewhat surprisingly, the result of the function is ``()``. This is the Haskell ``Unit`` type, similar to ``void`` in some other languages, like C
 or C# or Java - it's the type that carries no information.
 
-Unit is a built-in type in Haskell and it has just one value, which is
-written in the same way as the type itself, as we can see from the REPL.
+``Unit`` is a built-in type in Haskell and it has just one value, which is written in the same way as the type itself, as we can see from the REPL.
 
 .. code:: haskell
 
-      Prelude Week02.Burn> ()
+      Prelude Week02.Gift> ()
       ()
+      Prelude Week02.Gift> :t ()
+      () :: ()
 
-A function with a return type of () is quite unusual in Haskell. In more
-mainstream languages, it is quite common for functions or procedures to
-return no value. In these situations, the functions are only important
-for their side-effects, such as a Java function that prints something to
+A function with a return type of ``()`` is quite unusual in Haskell. In more mainstream languages, it is quite common for functions or procedures to
+return no value. In these situations, the functions are only important for their side-effects, such as a Java function that prints something to
 the console.
 
-But Haskell is a pure language. If you want side-effects, this will be
-shown by the type system. For example if the mkValidator were to perform
+But Haskell is a pure language. If you want side-effects, this will be shown by the type system. For example if the mkValidator were to perform
 any IO, it would have a type signature of:
 
 .. code:: haskell
 
       mkValidator :: Data -> Data -> Data -> IO ()
 
-This would indicate a function that performs IO side-effects but has no
-interesting return value.
+This would indicate a function that performs IO side-effects but has no interesting return value.
 
-But, as we know that the real mkValidator function performs no
-side-effects and returns no value, there is really nothing useful that
-it can do.
+But, as we know that the real ``mkValidator`` function performs no side-effects and returns no value, there is really nothing useful that it can do.
 
-However, there is something that the function can do as well as
-returning (), namely it can throw an exception or have an error. And
-that's what Plutus uses.
+However, there is something that the function can do as well as returning ``()``, namely it can throw an exception or have an error. And that's what Plutus uses.
 
-The idea is that if the mkValidator function does not run into an error
-or throw an exception, then validation succeeds. If it throws an error
-then validation fails and the transaction is rejected.
+The idea is that if the ``mkValidator`` function does not run into an error or throw an exception, then validation succeeds. If it throws an error then 
+validation fails and the transaction is rejected.
 
-Let's write the simplest Validator that we can.
+Let's write the simplest validator that we can.
 
 .. code:: haskell
 
       mkValidator :: Data -> Data -> Data -> ()
       mkValidator _ _ _ = ()
 
-The first argument is the Datum, the second argument is the Redeemer and
-the third argument is the Context, and the most simple thing we can do
-is to completely ignore all three arguments and immediately return Unit.
+The first argument is the datum, the second argument is the redeemer and the third argument is the context. The most simple thing we can do is to completely ignore all three arguments and immediately return ``()``.
 
 What this means is that this script address that corresponds to this
 Validator doesn't care about the Datum, it doesn't care about the
