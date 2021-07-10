@@ -3,10 +3,36 @@ Week 02 - Validation
 
 .. note::
       This is a written version of `Lecture
-      #2 <https://youtu.be/E5KRk5y9KjQ>`__.
+      #2, Iteration #2 <https://www.youtube.com/watch?v=sN3BIa3GAOc>`__.
 
       It covers low-level, untyped on-chain validation scripts and high-level,
       typed on-chain validation scripts.
+
+      The code in this lecture uses the Plutus commit 81ba78edb1d634a13371397d8c8b19829345ce0d      
+
+Before We Start
+---------------
+
+Let's talk about an important point that was brought up by one of the pioneers following lecture #1.
+
+You will recall in the auction example, we created three endpoints - start, bid and close. For *close* there were two scenarios. If there was a high-enough bid, the token goes to the highest bidder.
+If there was not a high-enough bid, the token goes back to the seller.
+
+What would happen if the *close* endpoint wasn't there? Could the money be locked forever in the contract?
+
+This is a really important point, because what you have to realise is that that UTxOs on the blockchain are just data, they are absolutely passive. In order 
+for anything to happen there must be a transaction. In order to make progress and to change the state of the blockchain, there must be a new transaction submitted
+that consumes various UTxOs and produces new UTxOs.
+
+Only new transactions change the state. A UTxO will never spring into action by itself and do something. You can't have a smart contract that sits on the blockchain and
+the, at some point, suddenly performs an action.
+
+So, we really need the *close* endpoint if we want the auction to be settled. In our case, the endpoint was manually triggered. You could write a contract that
+runs in the wallet that would automatically generate the *close* transaction - it is possible to write quite sophisticated off-chain code.
+
+However, from the point-of-view of the blockchain, it is always an external trigger that does something. Nothing happens if it is not externally triggered.
+
+So, if there were no *close* endpoint, or the *close* endpoint never got triggered, the funds would remain sitting at the script address forever.
 
 Introduction
 ------------
@@ -42,73 +68,62 @@ is validated by a node, the node will run the script and then, depending
 on the result of the script, decide whether the transaction is valid or
 not.
 
-And recall that there were three more additions:
+And recall that two were three more additions:
 
 1. Instead of just having signatures on transactions, we have so-called
    Redeemers - arbitrary pieces of data.
 2. On the UTxO output side, we have an additional arbitrary piece of
    data called Datum, which you can think of as a little piece of state
    that sits on the UTxO.
-3. Finally, we have the context. There are various choices of what this
-   context can be. It can be very restrictive, consisting just of the
-   Redeemer (as in Bitcoin), or very global, consisting of the whole
-   state of the blockchain (as in Ethereum). In Cardano, it is the
-   transaction that is being validated, including all its inputs and
-   outputs.
+
+Finally, we have the context. There are various choices of what this context can be. It can be very restrictive, consisting just of the Redeemer (as in Bitcoin), or very global, consisting of the whole 
+state of the blockchain (as in Ethereum). In Cardano, it is the transaction that is being validated, including all its inputs and outputs.
 
 So, there are three pieces of data that a Plutus script gets. The Datum,
-sitting at the UTxO, the Redeemer coming from the input and the
-validation, and the Context, consisting of the transaction being
+sitting at the UTxO, the redeemer, coming from the input and the
+validation, and the context, consisting of the transaction being
 validated and its inputs and outputs.
 
-In a concrete implementation like Plutus, these pieces of information
-need to be represented by a concrete data type - a Haskell data type. As
-it happens, the choice was made to use the same data type for all three
-of them. At least at the low-level implementation.
+In a concrete implementation like Plutus, these pieces of information need to be represented by a concrete data type - a Haskell data type. As it happens, 
+the choice was made to use the same data type for all three of them. At least at the low-level implementation.
 
-We will look at that first, but in real life nobody would actually use
-this low-level. There are more convenient ways to use more suitable data
+We will look at that first, but in real life nobody would actually use this low-level approach. There are more convenient ways to use more suitable data
 types for these things, and we will come to that later in this lecture.
 
 PlutusTx.Data
 -------------
 
-As mentioned, the Datum, Redeemer and Context share a data type. That
-data type is defined in the package *plutus-tx*, in the module
-`*PlutusTx.Data* <https://github.com/input-output-hk/plutus/blob/master/plutus-tx/src/PlutusTx/Data.hs>`__.
-It is called, simply, *Data*.
+As mentioned, the datum, redeemer and context share a data type. 
+
+That data type is defined in the package ``plutus-core``, in the module ``PlutusCore.Data``.
+
+It is called, simply, ``Data``.
 
 .. code:: haskell
 
       data Data =
-            Constr Integer [Data]
+           Constr Integer [Data]
          | Map [(Data, Data)]
          | List [Data]
          | I Integer
          | B BS.ByteString
          deriving stock (Show, Eq, Ord, Generic)
-         deriving anyclass (Serialise, NFData)
+         deriving anyclass (NFData)
 
 It has five constructors.
 
--  *Constr* takes an Integer and, recursively, a list of *Data*
--  *Map* takes a list of pairs of *Data*. You can think of this as a
-   lookup table of key-value pairs where both the key and the value are
-   of type *Data*
--  *List* takes a list of *Data*
--  *I* takes a single Integer
--  *B* takes a Bytestring
+-  ``Constr`` takes an Integer and, recursively, a list of ``Data``
+-  ``Map`` takes a list of pairs of *Data*. You can think of this as a lookup table of key-value pairs where both the key and the value are of type ``Data``
+-  ``List`` takes a list of ``Data``
+-  ``I`` takes a single Integer
+-  ``B`` takes a Bytestring
 
-For those familiar with the JSON format, this is very similar. The
-constructors are not exactly the same, but, like JSON, you can represent
-numbers, strings, lists of data and key-value pairs. It can represent
-arbitrary data, which makes it very suitable for our purpose.
+For those familiar with the JSON format, this is very similar. The constructors are not exactly the same, but, like JSON, you can represent
+numbers, strings, lists of data and key-value pairs. It can represent arbitrary data, which makes it very suitable for our purpose.
 
 We can also explore this type in the REPL.
 
-From the plutus-pioneers-program repository. Remember that you may need
-to start a nix-shell from the Plutus repository before changing into the
-week02 directory.
+From the plutus-pioneers-program repository. Remember that you may need to start a nix-shell from the Plutus repository before changing into the ``week02`` directory.
 
 ::
 

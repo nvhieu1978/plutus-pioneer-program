@@ -95,13 +95,9 @@ PlutusTx.Data
 
 As mentioned, the datum, redeemer and context share a data type. 
 
-That data type is defined in the package *plutus-core*, in the module
+That data type is defined in the package ``plutus-core``, in the module ``PlutusCore.Data``.
 
-.. code:: haskell
-
-      module PlutusCore.Data
-
-It is called, simply, *Data*.
+It is called, simply, ``Data``.
 
 .. code:: haskell
 
@@ -116,82 +112,74 @@ It is called, simply, *Data*.
 
 It has five constructors.
 
--  *Constr* takes an Integer and, recursively, a list of *Data*
--  *Map* takes a list of pairs of *Data*. You can think of this as a lookup table of key-value pairs where both the key and the value are of type *Data*
--  *List* takes a list of *Data*
--  *I* takes a single Integer
--  *B* takes a Bytestring
+-  ``Constr`` takes an Integer and, recursively, a list of ``Data``
+-  ``Map`` takes a list of pairs of *Data*. You can think of this as a lookup table of key-value pairs where both the key and the value are of type ``Data``
+-  ``List`` takes a list of ``Data``
+-  ``I`` takes a single Integer
+-  ``B`` takes a Bytestring
 
-For those familiar with the JSON format, this is very similar. The
-constructors are not exactly the same, but, like JSON, you can represent
-numbers, strings, lists of data and key-value pairs. It can represent
-arbitrary data, which makes it very suitable for our purpose.
+For those familiar with the JSON format, this is very similar. The constructors are not exactly the same, but, like JSON, you can represent
+numbers, strings, lists of data and key-value pairs. It can represent arbitrary data, which makes it very suitable for our purpose.
 
 We can also explore this type in the REPL.
 
-From the plutus-pioneers-program repository. Remember that you may need
-to start a nix-shell from the Plutus repository before changing into the
-week02 directory.
+Run the following from the plutus-pioneers-program repository. You may need to start a nix-shell from the Plutus repository before changing into the ``week02`` directory.
 
 ::
 
       cd code/week02
       cabal repl
 
-You should get a response like the following:
-
-::
-
-      Ok, 9 modules loaded.
-
-You may also see a whole bunch of warning messages regarding unused
-imports, which you can ignore.
-
-From with the REPL:
+From with the REPL, we need to import ``PlutusTx`` so that we have access to the ``Data`` type. ``Data`` is not defined in ``PlutusTx``, but it gets re-exported from there.
 
 ::
 
       import PlutusTx
+
+We can now get some information about ``Data``.
+
+::
+
       :i Data
 
 This will give information about the type *Data*.
 
 .. code:: haskell
 
-      Prelude Week02.Burn> import PlutusTx.Data
-      Prelude PlutusTx.Data Week02.Burn> :i Data
+      Prelude Week02.Burn> import PlutusTx
+      Prelude PlutusTx Week02.Burn> :i Data
       type Data :: *
       data Data
-         = Constr Integer [Data]
-         | Map [(Data, Data)]
-         | List [Data]
-         | I Integer
-         | B bytestring-0.10.12.0:Data.ByteString.Internal.ByteString
-         -- Defined in ‘PlutusTx.Data’
-      instance Eq Data -- Defined in ‘PlutusTx.Data’
-      instance Ord Data -- Defined in ‘PlutusTx.Data’
-      instance Show Data -- Defined in ‘PlutusTx.Data’
-      Prelude PlutusTx.Data Week02.Burn> 
-
-Now we can play with it. We can use the *I* constructor to create a
-value of type *Data*.
-
-.. code:: haskell
-
-      Prelude PlutusTx.Data Week02.Burn> I 7
-      I 7
-
-We can ask for its type, and confirm that it is indeed of type *Data*:
+        = Constr Integer [Data]
+        | Map [(Data, Data)]
+        | List [Data]
+        | I Integer
+        | B bytestring-0.10.12.0:Data.ByteString.Internal.ByteString
+              -- Defined in ‘plutus-core-0.1.0.0:PlutusCore.Data’
+      instance Eq Data
+        -- Defined in ‘plutus-core-0.1.0.0:PlutusCore.Data’
+      instance Ord Data
+        -- Defined in ‘plutus-core-0.1.0.0:PlutusCore.Data’
+      instance Show Data
+        -- Defined in ‘plutus-core-0.1.0.0:PlutusCore.Data’
+      instance IsData Data -- Defined in ‘PlutusTx.IsData.Class’
+      
+Now we can play with it. We can use the ``I`` constructor to create a value of type ``Data``.
 
 .. code:: haskell
 
-      Prelude PlutusTx.Data Week02.Burn> :t I 7
-      I 7 :: Data
+      Prelude PlutusTx.Data Week02.Burn> I 42
+      I 42
 
-The easiest way to create a value of type *Data* using the *B*
-constructor is to use the GHC Extension *OverloadedStrings*. This allows
-literal strings to be used in place of string-like data types and the
-compiler will interpret them as their intended type.
+We can ask for its type, and confirm that it is indeed of type ``Data``:
+
+.. code:: haskell
+
+      Prelude PlutusTx.Data Week02.Burn> :t I 42
+      I 42 :: Data
+
+The easiest way to create a value of type ``Data`` using the ``B`` constructor is to use the GHC Extension ``OverloadedStrings``. This allows
+literal strings to be used in place of string-like data types and the compiler will interpret them as their intended type.
 
 .. code:: haskell
 
