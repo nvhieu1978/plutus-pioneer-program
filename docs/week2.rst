@@ -298,18 +298,13 @@ So, with this code
 We are asking the compiler to write the code for the ``validator`` function at compile time based on our ``mkValidator`` function, and then proceed 
 with the normal compilation.
 
-You do not need to understand very much about Template Haskell to write
-Plutus as it is always the same pattern. Once you have seen a couple of
+You do not need to understand very much about Template Haskell to write Plutus as it is always the same pattern. Once you have seen a couple of
 examples, you can more or less just copy and paste.
 
-Template Haskell expects all the code to be available within the Oxford
-Brackets - [[ ]]. With more complicated Validators you will likely be
-relying on multiple helper functions, and you do not want to have to add
-them within the Oxford Brackets.
+Template Haskell expects all the code to be available within the Oxford Brackets - ``[| |]``. 
 
-To avoid this, there is one thing we need to do to the mkValidator
-function, and that is to make it inlinable by adding the INLINABLE
-pragma.
+With more complicated validators you will likely be relying on multiple helper functions, and you do not want to have to add them within the Oxford Brackets. To avoid this, there is one thing we 
+need to do to the ``mkValidator`` function, and that is to make it inlinable by adding the ``INLINABLE`` pragma.
 
 .. code:: haskell
 
@@ -317,12 +312,10 @@ pragma.
       mkValidator :: Data -> Data -> Data -> ()
       mkValidator _ _ _ = ()
 
-You will see this often in Plutus scripts, and it is usually an
-indication that a function is meant to be used within a validation
-script. All the functions on which the Validator depends must be
-inlinable.
+You will see this often in Plutus scripts, and it is usually an indication that a function is meant to be used within a validation script. All 
+the functions on which the validator depends must be inlinable.
 
-Let's go back to the REPL and take a look at the Validator.
+Let's go back to the REPL and take a look at the validator.
 
 .. code:: haskell
 
