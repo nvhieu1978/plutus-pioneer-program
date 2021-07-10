@@ -268,30 +268,26 @@ Let's write the simplest validator that we can.
 
 The first argument is the datum, the second argument is the redeemer and the third argument is the context. The most simple thing we can do is to completely ignore all three arguments and immediately return ``()``.
 
-What this means is that this script address that corresponds to this
-Validator doesn't care about the Datum, it doesn't care about the
-Redeemer, and it doesn't care about the Context. It will always succeed,
-and this means that any transaction can consume the script at this
-address as an input.
+What this means is that the script address that corresponds to this validator doesn't care about the datum, it doesn't care about the redeemer, and 
+it doesn't care about the Context. It will always succeed, and this means that any transaction can consume the script at this address as an input. It does not matter
+what datum exists for a UTxO at this script address, it doesn't matter which redeemer is used for the transaction and it doesn't matter what structure the transaction has.
 
-This function is not yet Plutus code, it is just a Haskell function. In
-order to turn it into a Plutus script, we need to compile it.
+If you send any funds to this script address, anybody can immediately take it.
 
-The result of our compilation to Plutus will be of type *Validator*.
-Below the function in Gift.hs, we add the following code.
+This function is not yet Plutus code, it is just a Haskell function. In order to turn it into a Plutus script, we need to compile it.
+
+The result of our compilation to Plutus will be of type ``Validator``. Below the function in ``Gift.hs``, we add the following code.
 
 .. code:: haskell
 
       validator :: Validator
       validator = mkValidatorScript $$(PlutusTx.compile [|| mkValidator ||])
 
-The mkValidatorScript function takes the type *CompiledCode (Data ->
-Data -> Data -> ()) -> Validator*. In order to create this type, we must
-compile the mkValidator script using something called Template Haskell.
+The ``mkValidatorScript`` function takes the type ``CompiledCode (Data -> Data -> Data -> ()) -> Validator``. In order to create this type, we must compile 
+the ``mkValidator`` script using something called Template Haskell.
 
-Template Haskell is an advanced feature of Haskell that solves a similar
-problem as macro systems in other languages. A macro being something
-that gets expanded at compile time. Code generating code.
+Template Haskell is an advanced feature of Haskell that solves a similar problem as macro systems in other languages. A macro being something that gets 
+expanded at compile time.
 
 So, with this code
 
@@ -299,9 +295,8 @@ So, with this code
 
       $$(PlutusTx.compile [|| mkValidator ||])
 
-We are asking the compiler to write the code for the *validator*
-function at compile time based on our mkValidator function, and then
-proceed with the normal compilation.
+We are asking the compiler to write the code for the ``validator`` function at compile time based on our ``mkValidator`` function, and then proceed 
+with the normal compilation.
 
 You do not need to understand very much about Template Haskell to write
 Plutus as it is always the same pattern. Once you have seen a couple of
