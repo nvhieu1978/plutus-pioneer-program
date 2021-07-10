@@ -187,27 +187,22 @@ literal strings to be used in place of string-like data types and the compiler w
       Prelude PlutusTx.Data Week02.Burn> :t B "Haskell"
       B "Haskell" :: Data
 
-We can also use more complicated constructors, like Map and List:
+We can also use more complicated constructors, like ``Map`` and ``List``:
 
 .. code:: haskell
 
-      Prelude PlutusTx.Data Week02.Burn> :t Map [(I 7, B "Haskell"), (List [I 0], I 1000)]
-      Map [(I 7, B "Haskell"), (List [I 0], I 1000)] :: Data
+      Prelude PlutusTx.Data Week02.Burn> :t Map [(I 42, B "Haskell"), (List [I 0], I 1000)]
+      Map [(I 42, B "Haskell"), (List [I 0], I 1000)] :: Data
 
 Plutus Validator
 ----------------
 
-Now we are ready to implement our very first Validator.
-
-As we know, a validator is a script that takes three pieces of input -
-the Datum, the Redeemer and the Context, which, at the lowest level are
-represented by the *Data* data type.
+Now we are ready to implement our very first validator.
 
 Example 1 - The Gift Contract
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-We start the script by copy pasting a list of GHC language extensions,
-plus some dependency imports.
+We start the script by copy pasting a list of GHC language extensions, plus some dependency imports from the example we used in the last lecture.
 
 .. code:: haskell
 
@@ -222,8 +217,11 @@ plus some dependency imports.
       ...
       import           Text.Printf         (printf)
 
-Then, we write the Validator. It is a Haskell function that takes three
-arguments, all of type *Data*.
+Then, we write the validator. Ultimately, the validator will be a script, living on the blockchain in Plutus Core, which is a lower-level language based on the 
+lambda calculus. But, we don't have to write Plutus Core. We can write Haskell and we will see later how we convert that Haskell into Plutus Core script.
+
+So, we write a Haskell function that represents our validator. As we know, a validator is a script that takes three pieces of 
+input - the datum, the redeemer and the context, respectively, which, at the lowest level are represented by the ``Data`` data type.
 
 .. code:: haskell
 
