@@ -701,8 +701,7 @@ wallet 3 can pass in an ``Integer`` which we can then pass to the validator as t
 .. code:: haskell
 
       type GiftSchema =
-         BlockchainActions
-            .\/ Endpoint "give" Integer
+                Endpoint "give" Integer
             .\/ Endpoint "grab" Integer
 
 We add the redeemer argument to the ``grab`` declaration. Note the addition of the ``Integer`` in the function signature, as well as the new
@@ -727,41 +726,42 @@ whereas ``>>=`` accesses the wrapped value and passes it to the next action.
 
       grab' = endpoint @"grab" >>= grab
 
-Now we can try it out in the playground. After adding the new code and
-clicking *Simulate* you will notice that the old scenario has gone. That
-is because the schema has changed and the old scenario is no longer
-valid.
+Now we can try it out in the playground. After adding the new code and clicking ``Simulate`` you will notice that the old scenario has gone. That
+is because the endpoints have changed and the old scenario is no longer valid.
 
-Let's set up a scenario that doesn't require a third wallet.
+Let's set up a scenario that uses just two wallets. Wallet one is going to give 3 Ada oo the contract, and wallet 2 is going to try to grab them, but 
+this time, wallet 2 will need to pass in a value which will be used to construct the redeemer.
 
-.. figure:: img/playground_week2_12.png
-   :alt: alt text
+For our first attempt, we will add the wrong redeemer value, in this case 100.
 
-   alt text
-Here wallet one is going to put 3 lovelace into the contract, and wallet
-two is going to try to grab them, but this time, wallet 2 will need to
-pass in a value which will be used to construct the redeemer.
+.. figure:: img/iteration2/pic__00033.png
 
-If we pass in 100 as the value for the grab endpoint, and click
-*Evaluate*, we see in the logs that validation has failed.
+If we click ``Evaluate``, we see that we only have two transactions, and we see that the Ada remains in the script, which shows that wallet 2 failed to grab it.
 
-.. figure:: img/playground_week2_13.png
-   :alt: alt text
+.. figure:: img/iteration2/pic__00034.png
 
-   alt text
-If we go back to scenario and change the value to 42, we should see that
-validation succeeds.
+The final balances also show this.
 
-.. figure:: img/playground_week2_14.png
-   :alt: alt text
+.. figure:: img/iteration2/pic__00035.png
 
-   alt text
-And indeed, wallet 2 now manages to unlock the UTxO held at the script
-address and grab it.
+And, if we look at the trace, we find the error.
 
-We see that the final balances are as we expect, and also the logs show
-that validation did not throw an error, which means that validation
-succeeded.
+.. code::
+
+      , Slot 2: 00000000-0000-4000-8000-000000000001 {Contract instance for wallet 2}:
+            Contract instance stopped with error: "WalletError (ValidationError (ScriptFailure (EvaluationError [\"wrong redeemer\"])))" ]
+
+If we go back to scenario, change the value to ``42`` and click ``Evaluate`` again, we should see that validation succeeds.
+
+.. figure:: img/iteration2/pic__00036.png
+
+Now we see the third transaction where wallet 2 manages to collect the funds, minus fees.
+
+.. figure:: img/iteration2/pic__00037.png
+
+We see that the final balances are as we expect, and also the logs show that validation did not throw an error, which means that validation succeeded.
+
+So that's the first example of a validator that looks at at least one of its arguments.
 
 Example 4 - Typed
 ~~~~~~~~~~~~~~~~~
