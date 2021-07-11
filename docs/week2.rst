@@ -202,6 +202,9 @@ Now we are ready to implement our very first validator.
 Example 1 - The Gift Contract
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+The Code
+++++++++
+
 We start the script by copy pasting a list of GHC language extensions, plus some dependency imports from the example we used in the last lecture.
 
 .. code:: haskell
@@ -494,85 +497,62 @@ And then some code that is used only by the Plutus Playground which allows us to
 
          mkKnownCurrencies []
 
-We will now test the Validator in the playground.
+Testing
++++++++
 
-Again we are using commit 3746610e53654a1167aeb4c6294c6096d16b0502 of
-the Plutus repository. This requires us to remove the *module* part of
-the code before pasting it into the playground editor.
+We will now test the ``Gift`` script in the playground.
 
-Remove this line
-
-.. code:: haskell
-
-      module Week02.Gift where
-
-Then, compile the script in the playground and press the *Simulate*
-button.
+Copy the ``Gift`` script into the playground, then compile the script in the playground and press the ``Simulate`` button.
 
 .. figure:: img/playground_week2_1.png
-   :alt: alt text
 
-   alt text
-And let's add a third wallet.
+And let's add a third wallet and give all the wallets 10 Ada (10 million lovelace).
 
-.. figure:: img/playground_week2_2.png
-   :alt: alt text
+.. figure:: img/iteration2/pic__00024.png
 
-   alt text
-We will create a scenario where wallets 1 and 2 give Lovelace, and
-wallet 3 grabs all of it.
+We will create a scenario where wallets 1 and 2 give lovelace, and wallet 3 grabs all of it.
 
-.. figure:: img/playground_week2_3.png
-   :alt: alt text
+You will see that the playground has rendered UI buttons for the two endpoints ``give`` and ``grab``. Use the ``give`` endpoint for to make wallet 1 give 4 Ada and
+to make wallet 2 give 6 Ada. Then add a wait action to wait for 1 block, and then use to ``grab`` endpoint to make wallet 3 grab the funds. Then add another wait action to wait
+for 1 block.
 
-   alt text
-And now click *Evaluate*. We see that there have been four transactions.
-The first one is the Genesis transaction that distributes the initial
-funds to the wallets.
+.. figure:: img/iteration2/pic__00025.png
 
-.. figure:: img/playground_week2_4.png
-   :alt: alt text
+And now click ``Evaluate``. We see that there have been four transactions.
 
-   alt text
-And there are two transactions which occur at Slot 1. They are the two
-*give* transactions.
+The first transaction is, as always, the genesis transaction that distributes the initial funds to the wallets.
 
-The first one, Tx 0, is from Wallet 2. We see the two outputs - one
-putting 6 Lovelace into the script address (the script address is a hash
-of the script), and the other returning the 4 Lovelace change to Wallet
-2.
+.. figure:: img/iteration2/pic__00026.png
+   
+And there are two transactions which occur at slot 1. They are the two ``give`` transactions.
 
-.. figure:: img/playground_week2_5.png
-   :alt: alt text
+The first one, Tx 0, is from wallet 2. The order here is not determined by the order that we created the transactions in the simulator. The important thing to note is that
+both ``give`` transactions occurred at the same slot.
 
-   alt text
-And the second, Tx 1, is from Wallet 1. Again, with similar output
-UTxOs.
+We see the three outputs. The first output is the 10 lovelace fee paid by wallet 2. The second output is the 6 Ada sent to the script address, and the third output is the returning of the change to wallet 2, which is 4 Ada minus the fees.
 
-.. figure:: img/playground_week2_6.png
-   :alt: alt text
+.. figure:: img/iteration2/pic__00027.png
 
-   alt text
+And the second, Tx 1, is from wallet 1. Again, with similar output UTxOs.
+
+.. figure:: img/iteration2/pic__00028.png
+
 We now have two UTxOs sitting at the script address.
 
-Then we have the *grab* at Slot 2 triggered by Wallet 3. We see the two
-UTxOs from the script as inputs, and the single output of 10 Lovelace to
-Wallet 3.
+Then we have the ``grab`` at slot 2 triggered by wallet 3. We see the two UTxOs from the script as inputs, and then two outputs. One output is the fees and the other
+is the output, paid to wallet 3, is of 10 Ada minus those fees. You'll notice that the fees are now higher than we saw before, and this is because a script has now been
+executed, which makes it more expensive. However, the fees here are not yet entirely calibrated with those that would be charged on the real blockchain.
 
-.. figure:: img/playground_week2_7.png
-   :alt: alt text
+.. figure:: img/iteration2/pic__00029.png
 
-   alt text
 And, by scrolling down, we see the final wallet balances.
 
-.. figure:: img/playground_week2_8.png
-   :alt: alt text
+.. figure:: img/iteration2/pic__00030.png
 
-   alt text
-As mentioned, this script uses the simplest validator possible, one that
-always succeeds. But this stupid little validator may be useful in a
-situation where someone wants to donate some Lovelace to the community
-and leave it up for grabs!
+If you were to scroll down further you would see some traces and log outputs that would give more detail about the execution.
+
+As mentioned, this script uses the simplest validator possible, one that always succeeds. But this silly little validator may be useful in a
+situation where someone wants to donate some lovelace to the community and leave it up for grabs!
 
 Example 2 - Burn
 ~~~~~~~~~~~~~~~~
