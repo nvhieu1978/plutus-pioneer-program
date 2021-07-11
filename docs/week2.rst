@@ -845,9 +845,34 @@ This is exactly what we need.
 
 This will not yet compile as other parts of the code are not yet type correct. We need to adapt our boilerplate.
 
-Remember that the mkValidatorScript expected code of type *Data -> Data
--> Data -> ()* but we now have something of type *() -> Integer ->
-ValidatorCtx -> Bool*.
+First, we introduce a new dummy data type, which here we call ``Typed``, simply based on the name of the script. For this type we must provide an instance
+of ``Scripts.ValidatorTypes``.
+
+The purpose of this instance is to declare the types for the datum and the redeemer.
+
+.. code:: haskell
+
+      data Typed
+      instance Scripts.ValidatorTypes Typed where
+          type instance DatumType Typed = ()
+          type instance RedeemerType Typed = Integer
+
+This is quite advanced Haskell, so-called type-level programming, but just like the Template Haskell we have already encountered, you don't 
+really need a deep understanding of it as all scripts will follow the same pattern.
+                    
+Now we need to compile the validator. Where previously we used ``mkValidatorScript``, now we use something called ``mkTypedValidator``, which takes our
+new data type as parameter and produces something of type ``TypedValidator``.
+
+.. code:: haskell
+
+      typedValidator :: Scripts.TypedValidator Typed
+      typedValidator = Scripts.mkTypedValidator @Typed
+          $$(PlutusTx.compile [|| mkValidator ||])
+          $$(PlutusTx.compile [|| wrap ||])
+        where
+          wrap = Scripts.wrapValidator @() @Integer
+          
+This is similar to the ``mkValidator`` code, but this type we also compile a ``wrapValidator`` function that takes the datum and redeemer types.
 
 In order for this to work we first need one more import.
 
@@ -855,245 +880,194 @@ In order for this to work we first need one more import.
 
       import qualified Ledger.Typed.Scripts as Scripts
 
-In this example, it is being imported qualified and using the Scripts
-prefix, but this is arbitrary and you could pick some other way of
-referencing the module.
+In this example, it is being imported qualified and using the ``Scripts`` prefix, but this is arbitrary and you could pick some other way of referencing the module.
 
-Now we need some boilerplate, the purpose of which is to tell the
-compiler which types we have picked for Datum and Redeemer.
+We these changes, the Haskell code will compile, and we now need to change the Template Haskell boilerplate that creates the ``validator`` function.
 
 .. code:: haskell
-
-      data Typed
-      instance Scripts.ScriptType Typed where
-         type instance DatumType Typed = ()
-         type instance RedeemerType Typed = Integer
-
-This is quite advanced Haskell, so-called type-level programming, but
-just like the Template Haskell we have already encountered, you don't
-really need a deep understanding of it as all scripts will follow the
-same schema.
-
-We these changes, the Haskell code will compile, and we now need to
-change the Template Haskell boilerplate that creates the *validator*
-function from the *mkValidator* function.
-
-Again, this pattern will be the same for all scripts that use typed
-validators.
-
-.. code:: haskell
-
-      inst :: Scripts.ScriptInstance Typed
-      inst = Scripts.validator @Typed
-         $$(PlutusTx.compile [|| mkValidator ||])
-         $$(PlutusTx.compile [|| wrap ||])
-      where
-         wrap = Scripts.wrapValidator @() @Integer
 
       validator :: Validator
-      validator = Scripts.validatorScript inst
+      validator = Scripts.validatorScript typedValidator
 
-We have now turned our untyped version into a typed version.
+Here we have used the ``validatorScript`` function to create an untyped validator from our typed version.
 
-In this extremely simply example, it probably doesn't seem worth the
-effort, but for realistic contracts, it is much nicer to do it like
-this.
+To get the hash we could, of course, use the validator we now have and turn it into a ``ValidatorHash`` as we did before, but there is a more direct way, which looks
+identical, but in this case ``Scripts`` is coming from the module ``Ledger.Typed.Scripts`` rather than ``Ledger.Scripts``. This version takes the typed validator directly.
 
-At this point the code will run as before in the simulator. However, we
-can make the *give* endpoint slightly simpler.
+.. code:: haskell
 
-Although we have not yet gone over this part of the code in detail, the
-following changes can be made.
+      valHash :: Ledger.ValidatorHash
+      valHash = Scripts.validatorHash typedValidator
+
+The script address is calculated as before.
+
+.. code:: haskell
+
+      scrAddress :: Ledger.Address
+      scrAddress = scriptAddress validator
+
+In this extremely simply example, it probably doesn't seem worth the effort, but for realistic contracts, it is much nicer to do it like this.
+
+The off-chain code is almost identical.
+
+There is a small change change to the ``give`` endpoint. Although we have not yet gone over this part of the code in detail, the following changes can be made.
 
 .. code:: haskell
 
       let tx = mustPayToTheScript () $ Ada.lovelaceValueOf amount
       ledgerTx <- submitTxConstraints inst tx
 
-The *mustPayToOtherScript* function has been replaced with
-*mustPayToTheScript*. We can pass in just () as we longer need to
-construct a value of type *Data*. And we also no longer need to pass in
-the script hash.
+The ``mustPayToOtherScript`` function has been replaced with ``mustPayToTheScript``. This is a convenience script which allows us to pass 
+in just () as we longer need to construct a value of type ``Data``. We also no longer need to pass in the script hash.
 
-Also, *submitTx* has been replaced with *submitTxConstraints* and takes
-the *inst* as one of its arguments.
+The behaviour of this code will be identical to the behaviour in the previous example, so we won't go over it in the playground.
 
-Now we will explain how that actually works. How does Plutus convert
-these custom data types to the actual low-lever implementation - the
-*Data* type.
+Now we will explain how that actually works. How does Plutus convert these custom data types to the actual low-level implementation - the ``Data`` type.
 
-We can look at the code in the *PlutusTx.IsData.Class* module.
+We can look at the code in the ``PlutusTx.IsData.Class`` module.
 
-Here we see that there is a quite simple type class defined, called
-*IsData*. The code here is taken directly from the Plutus code at commit
-3746610e53654a1167aeb4c6294c6096d16b0502.
+Here we see that there is a quite simple type class defined called ``IsData``.
 
-.. code:: haskell
+.. figure:: img/iteration2/pic__00037.png
 
-      -- | A typeclass for types that can be converted to and from 'Data'.
-      class IsData (a :: Type) where
-         toData :: a -> Data
-         -- TODO: this should probably provide some kind of diagnostics
-         fromData :: Data -> Maybe a
+This class provides two functions
 
-This class allows us to translate between the *Data* type and types that
-are instances of the class.
-
-It provides two functions
-
--  toData - takes a value and converts it to *Data*
--  fromData - takes a value of type *Data* and attempts to convert it to
-   an instance of type *IsData*. This can fail because not all values of
-   type *Data* will be convertible to the target type.
+-  ``toData`` takes a value and converts it to ``Data``
+-  ``fromData`` takes a value of type ``Data`` and attempts to convert it to an instance of type ``IsData``. This can fail because not all values of
+   type ``Data`` will be convertible to the target type.
 
 Let's try this out in the REPL.
 
 .. code:: haskell
 
-      Prelude Week02.Burn> :l src/Week02/Typed.hs 
-      Ok, one module loaded.
-      Prelude Week02.Typed> import PlutusTx.IsData
-      Prelude PlutusTx.IsData Week02.Typed>
+      Prelude Week02.Typed> import PlutusTx
+      Prelude PlutusTx Week02.Typed> import PlutusTx.IsData.Class
+      Prelude PlutusTx PlutusTx.IsData.Class Week02.Typed> :i IsData
 
-We know that *Unit* and *Integer* are both instances of *IsData* because
-they worked in our example.
+We know that ``()`` and ``Integer`` are both instances of ``IsData`` because they worked in our example.
 
-Let's convert an *Integer* to *Data*
+Let's convert an ``Integer`` to ``Data``
 
 .. code:: haskell
 
-      Prelude PlutusTx.IsData Week02.Typed> toData (42 :: Integer)
+      Prelude PlutusTx PlutusTx.IsData.Class Week02.Typed> toData (42 :: Integer)
       I 42
-
-We see that this has been converted to an instance of type *Data* using
-the *I* constructor, which we did manually before we used typed
+      
+We see that this has been converted to an instance of type ``Data`` using the ``I`` constructor, which we did manually before we used typed
 validation.
 
 Now let's do it the other way around
 
-First we need to import PlutusTx to make the *Data* type available to
-us.
-
 .. code:: haskell
 
-      Prelude PlutusTx.IsData Week02.Typed> import PlutusTx
-
-Then we will convert from *Data* to *Integer*.
-
-.. code:: haskell
-
-      Prelude PlutusTx.IsData PlutusTx Week02.Typed> fromData (I 42) :: Maybe Integer
+      Prelude PlutusTx PlutusTx.IsData.Class Week02.Typed> fromData (I 42) :: Maybe Integer
       Just 42
 
-We get a *Just 42* back - *Just* being the Maybe constructor when Maybe
-is not Nothing.
+We get a ``Just 42`` back - ``Just`` being the ``Maybe`` constructor when ``Maybe`` is not ``Nothing``.
 
-And when it fails, when it can't convert to the target type, we will get
-back Nothing.
+And when it fails, when it can't convert to the target type, we will get back ``Nothing``.
 
 .. code:: haskell
 
-      Prelude PlutusTx.IsData PlutusTx Week02.Typed> fromData (List []) :: Maybe Integer
+      Prelude PlutusTx PlutusTx.IsData.Class Week02.Typed> fromData (List []) :: Maybe Integer
       Nothing
 
-If we examine *IsData* we can see all the types that this pattern will
-work for - all the types that have an *IsData* instance defined.
-
-If we examine *IsData*
+If we examine ``IsData`` we can see all the types that this pattern will work for all the types that have an ``IsData`` instance defined.
 
 .. code:: haskell
 
-      Prelude PlutusTx.IsData Week02.Typed> :i IsData
+      Prelude PlutusTx PlutusTx.IsData.Class Week02.Typed> :i IsData
       type IsData :: * -> Constraint
       class IsData a where
-      toData :: a -> PlutusTx.Data.Data
-      fromData :: PlutusTx.Data.Data -> Maybe a
-      {-# MINIMAL toData, fromData #-}
-         -- Defined in ‘PlutusTx.IsData.Class’
+        toData :: a -> Data
+        fromData :: Data -> Maybe a
+        {-# MINIMAL toData, fromData #-}
+              -- Defined in ‘PlutusTx.IsData.Class’
       instance IsData a => IsData (Maybe a)
-      -- Defined in ‘plutus-tx-0.1.0.0:PlutusTx.IsData.Instances’
+        -- Defined in ‘plutus-tx-0.1.0.0:PlutusTx.IsData.Instances’
       instance (IsData a, IsData b) => IsData (Either a b)
-      -- Defined in ‘plutus-tx-0.1.0.0:PlutusTx.IsData.Instances’
+        -- Defined in ‘plutus-tx-0.1.0.0:PlutusTx.IsData.Instances’
       instance IsData Bool
-      -- Defined in ‘plutus-tx-0.1.0.0:PlutusTx.IsData.Instances’
+        -- Defined in ‘plutus-tx-0.1.0.0:PlutusTx.IsData.Instances’
       instance (IsData a, IsData b, IsData c, IsData d) =>
-            IsData (a, b, c, d)
-      -- Defined in ‘plutus-tx-0.1.0.0:PlutusTx.IsData.Instances’
+               IsData (a, b, c, d)
+        -- Defined in ‘plutus-tx-0.1.0.0:PlutusTx.IsData.Instances’
       instance (IsData a, IsData b, IsData c) => IsData (a, b, c)
-      -- Defined in ‘plutus-tx-0.1.0.0:PlutusTx.IsData.Instances’
+        -- Defined in ‘plutus-tx-0.1.0.0:PlutusTx.IsData.Instances’
       instance (IsData a, IsData b) => IsData (a, b)
-      -- Defined in ‘plutus-tx-0.1.0.0:PlutusTx.IsData.Instances’
+        -- Defined in ‘plutus-tx-0.1.0.0:PlutusTx.IsData.Instances’
       instance IsData ()
-      -- Defined in ‘plutus-tx-0.1.0.0:PlutusTx.IsData.Instances’
+        -- Defined in ‘plutus-tx-0.1.0.0:PlutusTx.IsData.Instances’
       instance IsData a => IsData [a]
-      -- Defined in ‘PlutusTx.IsData.Class’
+        -- Defined in ‘PlutusTx.IsData.Class’
       instance IsData Integer -- Defined in ‘PlutusTx.IsData.Class’
+      instance (TypeError ...) => IsData Int
+        -- Defined in ‘PlutusTx.IsData.Class’
+      instance IsData Data -- Defined in ‘PlutusTx.IsData.Class’
+      
+This is still quite a short list of possible types. We would like to use many more types than this for our datum and redeemer.
 
-This is still quite a short list of possible types. We would like to use
-many more types than this for our Datum and Redeemer.
-
-In order to do this, we would normally need to define an *IsData*
-instance for any type that we wish to use. This will allow us to tell
-the compiler how to do the back and forth conversions.
-
-However, this again would be tedious as it is such a mechanical process.
-So, there is a mechanism in Plutus that does this for us.
+In order to do this, we would normally need to define an ``IsData`` instance for any type that we wish to use. This will allow us to tell the 
+compiler how to do the back and forth conversions. However, this again would be tedious as it is such a mechanical process. So, there 
+is a mechanism in Plutus that does this for us.
 
 Example 5 - Custom IsData types
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Before we look at that mechanism, let's rewrite the validation function.
-
-.. code:: haskell
-
-      {-# INLINABLE mkValidator #-}
-      mkValidator :: () -> Integer -> ValidatorCtx -> Bool
-      mkValidator () r _ = r == 42
-
-This does the same job, but is now a one-liner. However, we no longer
-have our error message. To solve this, there is a function called
-*traceIfFalse* that takes a *String* and a *Bool*. If the *Bool* is
-true, the string will be ignored, otherwise it will be logged. The
-result of the function will be the value of the *Bool*.
-
-.. code:: haskell
-
-      {-# INLINABLE mkValidator #-}
-      mkValidator :: () -> Integer -> ValidatorCtx -> Bool
-      mkValidator () r_ = traceIfFalse "wrong redeemer" $ r == 42
-
-Now let's talk about custom data types. Let's define a silly one and use
-it in our validator function.
+Now let's talk about custom data types. Let's define a silly one and use it in our validator function.
 
 .. code:: haskell
 
       newtype MySillyRedeemer = MySillyRedeemer Integer
-         deriving Show
+
+      PlutusTx.unstableMakeIsData ''MySillyRedeemer
 
       {-# INLINABLE mkValidator #-}
-      mkValidator :: () -> MySillyRedeemer -> ValidatorCtx -> Bool
+      mkValidator :: () -> MySillyRedeemer -> ScriptContext -> Bool
       mkValidator () (MySillyRedeemer r) _ = traceIfFalse "wrong redeemer" $ r == 42
+
+.. note::
+
+      There is also a stable version of the ``PlutusTx.unstableMakeIsData`` function, and the stable version should always be used in production code. The difference between the two is 
+      that, in the case where more than one ``Data`` constructor is required, the unstable version makes no guarantee, between Plutus versions, that the 
+      order of constructors will be preserved.
 
 And we need to change some of the boilerplate.
 
 .. code:: haskell
 
       data Typed
-      instance Scripts.ScriptType Typed where
+      instance Scripts.ValidatorTypes Typed where
       ...
          type instance RedeemerType Typed = MySillyRedeemer
 
-      inst :: Scripts.ScriptInstance Typed
+      typedValidator :: Scripts.TypedValidator Typed
       ...
       where
          wrap = Scripts.wrapValidator @() @MySillyRedeemer
 
-If we try to compile the code now, either on the command line or in the
-playground, we will get an error because Plutus doesn't know how to
-convert back and forth between *IsData* and *MySillyRedeemer*.
+We also need to change some off-chain code in the ``grab`` endpoint. 
 
-We could write an instance of *IsData* for *MySillyRedeemer* by hand.
-But, we don't need to.
+Instead of using ``I r``, we will use ``toData (MySillyRedeemer r)``.
+
+.. code:: haskell
+
+      grab :: forall w s e. AsContractError e => Integer -> Contract w s e ()
+      grab r = do
+          utxos <- utxoAt scrAddress
+          let orefs   = fst <$> Map.toList utxos
+              lookups = Constraints.unspentOutputs utxos      <>
+                        Constraints.otherScript validator
+              tx :: TxConstraints Void Void
+              tx      = mconcat [mustSpendScriptOutput oref $ Redeemer $ PlutusTx.toData (MySillyRedeemer r) | oref <- orefs]
+          ledgerTx <- submitTxConstraintsWith @Void lookups tx
+          void $ awaitTxConfirmed $ txId ledgerTx
+          logInfo @String $ "collected gifts"
+
+If we try to compile the code now, either on the command line or in the playground, we will get an error because Plutus doesn't know how to
+convert back and forth between ``IsData`` and ``MySillyRedeemer``.
+
+We could write an instance of ``IsData`` for ``MySillyRedeemer`` by hand. But, we don't need to.
 
 Instead we can use another bit of Template Haskell magic.
 
@@ -1101,55 +1075,25 @@ Instead we can use another bit of Template Haskell magic.
 
       PlutusTx.unstableMakeIsData ''MySillyRedeemer
 
-At compile time, the compiler will use the Template Haskell to write an
-*IsData* instance for us. And now, it will compile.
+At compile time, the compiler will use the Template Haskell to write an ``IsData`` instance for us. And now, it will compile.
 
 Let's check it in the REPL.
 
 .. code:: haskell
 
-      Prelude PlutusTx.IsData PlutusTx> :l src/Week02/IsData.hs 
+      Prelude PlutusTx PlutusTx.IsData.Class> :l src/Week02/IsData.hs
       Ok, one module loaded.
+      Prelude PlutusTx PlutusTx.IsData.Class Week02.IsData> toData (MySillyRedeemer 42)
+      Constr 0 [I 42]
 
-Converting to *IsData*.
+If you try this code, which is in ``IsData.hs``, in the playground, you should see that it behaves in the same way as before.
 
-.. code:: haskell
+Summary
+-------
 
-      Prelude PlutusTx.IsData PlutusTx Week02.IsData> toData (MySillyRedeemer 17)
-      Constr 0 [I 17]
-      Prelude PlutusTx.IsData PlutusTx Week02.IsData>
+We have seen a couple of examples of simple validators and we have seen both the low-level approach and the higher-level typed approach where we
+can use a custom type.
 
-And converting back again.
-
-.. code:: haskell
-
-      Prelude PlutusTx.IsData PlutusTx Week02.IsData> fromData (Constr 0 [I 3]) :: Maybe MySillyRedeemer
-      Just (MySillyRedeemer 3)
-
-Note that in order to run this conversion back to Maybe MySillyRedeemer
-in the REPL, it relies on MySillyRedeemer deriving Show, so that the
-REPL knows how to display the result.
-
-So far, so good.
-
-That is the on-chain part and now we need to do something in the
-off-chain part where we produce the Redeemer.
-
-.. code:: haskell
-
-      grab r = do
-      ...
-         tx = mconcat [mustSpendScriptOutput oref $ Redeemer $ PlutusTx.toData $ MySillyRedeemer r | oref <- orefs]
-
-If you try this code (in IsData.hs) in the playground, you should see
-that it behaves in the same way as before.
-
-We have seen a couple of examples of simple validators and we have seen
-both the low-level approach and the higher-level typed approach where we
-can use custom type.
-
-We completely ignore the third argument, the validation context, which
-allows us to inspect the spending transaction which we haven't done so
-far.
+We completely ignore the third argument, the script context, which allows us to inspect the spending transaction which we haven't done so far.
 
 We will look at that in the next lecture.
