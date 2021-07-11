@@ -675,10 +675,9 @@ If we now run the same scenario in the playground with the new code, we will see
 Example 3 - Forty Two
 ~~~~~~~~~~~~~~~~~~~~~
 
-Now let's write a validator that looks at at least one of the arguments.
-Let's write a simple one that expects a simple Redeemer.
+For the next example, we will write a validator that does not completely ignore all its arguments. We'll write one that expects a simple redeemer.
 
-Now that we care about the redeemer, we need to be able to reference it.
+Now that we care about the redeemer, we need to be able to reference it. Let's call it ``r``.
 
 .. code:: haskell
 
@@ -686,10 +685,7 @@ Now that we care about the redeemer, we need to be able to reference it.
       mkValidator :: Data -> Data -> Data -> ()
       mkValidator _ r _
 
-We can now reference the redeemer as *r* in the code.
-
-Let's say that we expect the redeemer to be I 42. If so, validation
-passes. If not, we fail with an error message.
+Let's say that we want validation to pass if the redeemer is ``I 42``. 
 
 .. code:: haskell
 
@@ -699,10 +695,8 @@ passes. If not, we fail with an error message.
          | r == I 42 = ()
          | otherwise = traceError "wrong redeemer"
 
-If we were to run this now in the playground, validation would always
-fail. We need to add an input to the *grab* endpoint so that Wallet 3
-can pass in the redeemer which will be used by the *mkValidator*
-function.
+If we were to run this now in the playground, validation would always fail. We need to modify the off-chain code to add an input to the ``grab`` endpoint so that 
+wallet 3 can pass in an ``Integer`` which we can then pass to the validator as the redeemer.
 
 .. code:: haskell
 
@@ -711,32 +705,23 @@ function.
             .\/ Endpoint "give" Integer
             .\/ Endpoint "grab" Integer
 
-And now, the redeemer is no longer to be ignored in the *grab* part of
-the code. Instead we will pass in the value of the redeemer given to the
-endpoint.
-
-We add the redeemer argument to the *grab* declaration. Note the
-addition of the Integer in the function signature, as well as the new
-*r* parameter which is used to reference it.
+We add the redeemer argument to the ``grab`` declaration. Note the addition of the ``Integer`` in the function signature, as well as the new
+``n`` parameter which is used to reference it.
 
 .. code:: haskell
 
-      grab :: forall w s e. (HasBlockchainActions s, AsContractError e) => Integer -> Contract w s e ()
-      grab r = do
+      grab :: forall w s e. AsContractError e => Integer -> Contract w s e ()
+      grab n = do
 
-And then pass it to the *mustSpendScriptOutput* instead of the
-throw-away value we used earlier.
+We can then pass it to the ``mustSpendScriptOutput`` function instead of the throw-away value we used earlier.
 
 .. code:: haskell
 
-      tx = mconcat [mustSpendScriptOutput oref $ Redeemer $ I r | oref <- orefs]
+      tx = mconcat [mustSpendScriptOutput oref $ Redeemer $ I n | oref <- orefs]
 
-One more change, we need to change the ">>" to ">>=" in the following
-code, now that *grab* has an argument. You can use the REPL to look at
-the types ">>" and ">>=" to see why the second one is now needed.
-Basically, they both sequence actions, but >> ignores any wrapped
-values, whereas >>= accesses the wrapped value and passes it to the next
-action.
+One more change, we need to change the ``>>`` to ``>>=`` in the following code, now that ``grab`` has an argument. You can use the REPL to look at
+the types ``>>`` and ``>>=`` to see why the second one is now needed. Basically, they both sequence actions, but ``>>`` ignores any wrapped values, 
+whereas ``>>=`` accesses the wrapped value and passes it to the next action.
 
 .. code:: haskell
 
