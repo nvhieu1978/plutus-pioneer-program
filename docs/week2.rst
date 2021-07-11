@@ -766,24 +766,21 @@ So that's the first example of a validator that looks at at least one of its arg
 Example 4 - Typed
 ~~~~~~~~~~~~~~~~~
 
-It was mentioned at the beginning of the lecture, this is low-level
-Plutus and in reality, no-one will write validation functions like this.
+It was mentioned at the beginning of the lecture, this is low-level Plutus and in reality, no-one will write validation functions like this.
 
-Now we will see how it is actually done.
+Now we will see how it is actually done using a typed version.
 
-Even though the *Data* type is powerful and you can encode all sorts of
-data into it, it doesn't really feel like Haskell. It is almost like you
-are writing in an untyped language like Javascript or Python. It is just
-a like a blob of data, it can contain anything so you don't really have
-any type safety. You will always need to check, for example, if you are
-expecting an integer that you are indeed given an integer.
+Even though the ``Data`` type is powerful and you can encode all sorts of data into it, it doesn't really feel like Haskell. It is almost like you 
+are writing in an untyped language like Javascript or Python. It is just a like a blob of data, it can contain anything so you don't really have
+any type safety. You will always need to check, for example, if you are expecting an integer that you are indeed given an integer.
 
-We would rather use more specific data types that are tailored to the
-business logic.
+It is especially bad with the third argument, the context. Even though it's easy to imagine that you can somehow encode a transaction with its inputs and outputs into
+the ``Data`` type, it is not at all clear how that is done.
 
-This is indeed possible with so-called Typed Validators. What this means
-is that we can replace the occurrences of *Data* in the mkValidator
-signature with more suitable types.
+We would rather use more specific data types that are tailored to the business logic.
+
+This is indeed possible with so-called Typed Validators. What this means is that we can replace the occurrences of ``Data`` in the ``mkValidator`` signature 
+with more suitable types.
 
 .. code:: haskell
 
@@ -803,49 +800,50 @@ it would probably make more sense to use Integer instead.
 
       mkValidator :: () -> Integer -> Data -> ()
 
-We haven't talked yet about what the Context actually looks like, but
-you can imagine that its translation into the *Data* type is quite
-awkward and it wouldn't be pleasant to work with.
-
-There is a much nicer type called *ValidatorCtx* that's made exactly for
-this purpose.
-
-Note: this type gets replaced with ScriptContext in later Plutus builds
-and will be used from Lecture 3 onwards.
+For the context, there is a much nicer type called ``ScriptContext`` that's made exactly for this purpose.
 
 .. code:: haskell
 
-      mkValidator :: () -> Integer -> ValidatorCtx -> ()
+      mkValidator :: () -> Integer -> ScriptContext -> ()
 
-Finally, we have already mentioned that it is a bit unusual to use Unit
-as a return type. Much more natural would be to use Bool to indicate
+Finally, we have already mentioned that it is a bit unusual to use ``()`` as a return type. Much more natural would be to use ``Bool`` to indicate
 successful or failed validation.
 
 .. code:: haskell
 
-      mkValidator :: () -> Integer -> ValidatorCtx -> Bool
+      mkValidator :: () -> Integer -> ScriptContext -> Bool
 
-So, this is a better way to write validation code. The last two types
-*ValidatorCtx* and *Bool* will always be the same (but see note above),
-but the first two types can be different depending on the situation.
+So, this is a better way to write validation code. The last two types ``SciprtContext`` and ``Bool``, but the first two types can be different depending on the situation.
 
-In this case, let's now rewrite the function accordingly using these new
-types. The parameter *r* is now no longer of type *Data* - it is an
-*Integer*, so we can simply check that it is equal to 42 rather than
-against a constructed *Data* type.
+In this case, let's now rewrite the function accordingly using these new types. The parameter ``r`` is now no longer of type ``Data`` - it is an ``Integer``, so 
+we can simply check that it is equal to 42 rather than checking it against a constructed ``Data`` type.
 
-And, we no longer want to return Unit - we will return True or False.
+And, as we are now returning a ``Bool``, we can we just make the function a boolean expression.
 
 .. code:: haskell
 
       {-# INLINABLE mkValidator #-}
-      mkValidator :: () -> Integer -> ValidatorCtx -> Bool
-      mkValidator () r _
-         | r == 42   = True
-         | otherwise = False
+      mkValidator :: () -> Integer -> ScriptContext -> Bool
+      mkValidator _ r _ = r == 42
 
-This will not yet compile as other parts of the code are not yet type
-correct.
+This will have the same problem that we had before in that, in the case of an error, we won't get a nice error message. There is a nice Plutus function
+called ``traceIfFalse`` which takes a ``String`` and a ``Bool`` and returns a ``Bool``. If the first ``Bool`` is ``True``, the result will be ``True`` and the ``String`` is
+ignored. However, if the first ``Bool`` is ``False``, then the result will be ``False`` and the ``String`` will be logged.
+
+.. code:: haskell
+
+      PlutusTx.Prelude.traceIfFalse
+            :: PlutusTx.Builtins.String -> Bool -> Bool
+
+This is exactly what we need.
+
+.. code:: haskell
+
+      {-# INLINABLE mkValidator #-}
+      mkValidator :: () -> Integer -> ScriptContext -> Bool
+      mkValidator _ r _ = traceIfFalse "wrong redeemer" $ r == 42
+
+This will not yet compile as other parts of the code are not yet type correct. We need to adapt our boilerplate.
 
 Remember that the mkValidatorScript expected code of type *Data -> Data
 -> Data -> ()* but we now have something of type *() -> Integer ->
