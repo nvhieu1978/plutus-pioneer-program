@@ -557,12 +557,13 @@ situation where someone wants to donate some lovelace to the community and leave
 Example 2 - Burn
 ~~~~~~~~~~~~~~~~
 
-Let's look at the second example of validation, using the Burn module.
-We will start with the Burn.hs code being identical to the Gift.hs
-script.
+Let's look at the second example of validation.
 
-Recall that the way a validator indicates failure is by throwing an
-error.
+We will start by copying the ``Gift.hs`` code and renaming it ``Burn.hs``.
+
+In the ``Gift`` example we had a validator that would always succeed. In this example, we want to do the opposite - a validator that always fails.
+
+Recall that a validator indicates failure by throwing an error. So we can modify our validator accordingly.
 
 .. code:: haskell
 
@@ -576,103 +577,100 @@ If we load the module in the REPL and look at *error*
       Prelude Week02.Burn> :t error
       error :: [Char] -> a
 
-We see the definition for the standard Haskell error function. However,
-the one in scope in our code is in fact the following *error* function.
+We see the definition for the ``error`` function defined in the standard Haskell ``Prelude``. However, the one in scope in our code is in fact the following ``error`` function.
 
 .. code:: haskell
 
       Prelude Week02.Burn> :t PlutusTx.Prelude.error
       PlutusTx.Prelude.error :: () -> a
 
-In regular Haskell, you have the *error* function which takes an error
-message string and triggers an error.
+In regular Haskell, you have the ``error`` function which takes an error message string and triggers an error. In Plutus, the ``error`` 
+function does not take a string - it just takes ``()`` and returns an arbitrary type.
 
-In Plutus, the *error* function does not take a string - it just takes
-Unit. And that takes us to an important point.
+And that takes us to an important point.
 
-We mentioned earlier that we use the INLINABLE pragma on the
-*mkValidator* function in order to allow it to be used by the Template
-Haskell code. In Haskell there are many functions available via the
-*Prelude* module, but these will not be usable in Plutus as they are not
-inlinable. So, the Plutus team have provided an alternative *Prelude*
-that can be used in validation.
+We mentioned earlier that we use the ``INLINABLE`` pragma on the ``mkValidator`` function in order to allow it to be used by the Template Haskell code. 
+In Haskell there are many functions available via the ``Prelude`` module, but these will not be usable in Plutus as they are not defined as inlinable. 
+So, the Plutus team have provided an alternative Prelude that can be used in validation.
 
-The way that the Plutus Prelude is able to take precedence over the
-Haskell Prelude, which is normally in scope by default, is by using the
-following LANGUAGE pragma in the code.
+The way that the Plutus Prelude is able to take precedence over the Haskell Prelude, which is normally in scope by default, is by using the following ``LANGUAGE`` pragma in the code.
 
 .. code:: haskell
 
       {-# LANGUAGE NoImplicitPrelude   #-}
 
-Then, by importing PlutusTx.Prelude, its functions are used in place of
-the standard Prelude functions.
+Then, by importing ``PlutusTx.Prelude``, its functions are used in place of the standard Prelude functions.
 
 .. code:: haskell
 
       import PlutusTx.Prelude hiding (Semigroup(..), unless)
 
-You may also notice that the standard Prelude is also imported. However,
-it is only in order to bring in *Semigroup*, which we explicitly hid in
-the PlutusTx.Prelude import. But this is not important right now.
+You may also notice that the standard Prelude is also imported. However, it is only in order to bring in some functions that have nothing to do with validation but is
+for the off-chain code and the playground.
 
 .. code:: haskell
 
-      import Prelude (Semigroup (..))
+      import Prelude (IO, Semigroup (..), String)
 
-Just remember that when you are using something in a Plutus script that
-looks like a function from the standard Prelude, what you are actually
-using is a function from the Plutus Prelude. Often they will have the
-same signature, but, as we can see in the case of *error*, they are not
-always identical.
+It can be confusing. A lot of the functions in the Plutus Prelude do have the same signatures and same behaviour as their namesakes in the standard Prelude, but that
+is not always the case, and ``error`` is an example.
 
-Looking again at our new validator, we now have a validator that will
-always fail.
+Just remember that when you are using something in a Plutus script that looks like a function from the standard Prelude, what you are actually using is a 
+function from the Plutus Prelude. Often they will have the same signature, but they are not always identical - for example operator precedents may not be the same
+
+Looking again at our new validator, we now have a validator that will always fail.
 
 .. code:: haskell
 
       mkValidator :: Data -> Data -> Data -> ()
       mkValidator _ _ _ = error ()
 
-We will leave everything else as it was and check the effect in the
-playground.
+We will leave everything else as it was and check the effect of this change, using the playground. After clicking ``Compile``, the previous scenario 
+should still be present in the simulator. And after clicking ``Evaluate`` and scrolling down a little, we can see that wallets 1 and 2 have made their gifts but
+wallet 3 has been unable to grab.
 
-.. figure:: img/playground_week2_10.png
+.. figure:: img/iteration2/pic__00031.png
 
-Here, the script address is different. The script is different an so has
-a different hash.
+If we scroll down further, we will find a log message showing that validation failed.
 
-We also notice that the *grab* transaction did not work, and if we
-scroll down to look at the logs, we see that it was not validated.
+.. code::
 
-.. figure:: img/playground_week2_9.png
+      , Slot 2: 00000000-0000-4000-8000-000000000002 {Contract instance for wallet 3}:
+            Contract instance stopped with error: "WalletError (ValidationError (ScriptFailure (EvaluationError [])))" ]
 
-So, in our first example we had a validator that would always succeed
-and would allow anyone to grab the UTxOs from it. In the second example,
-we have a validator that always fails and any UTxOs sent to this script
-address can never be retrieved. This is basically a way to burn funds,
+So, in our first example we had a validator that would always succeed and would allow anyone to grab the UTxOs from it. In the second example,
+we have a validator that always fails and any UTxOs sent to this script address can never be retrieved. This is basically a way to burn funds,
 which may be useful under some circumstances.
 
-When we look at the logs, we see that validation fails, but we have no
-clue why it fails. here's a way to change that by using a variant of
-error - *traceError*.
+When we look at the logs, we see that validation fails, but we have no clue why it fails. here's a way to change that by using a variant of
+error - ``traceError``.
 
 .. code:: haskell
 
-      mkValidator _ _ _ = traceError "NO WAY!"
+      Prelude Week02.Burn> :t PlutusTx.Prelude.traceError
+      PlutusTx.Prelude.traceError :: PlutusTx.Builtins.String -> a      
 
 The function takes a string, but not a Haskell string. It is a Plutus
-string. In order for this to compile, we need to use the
-OverloadedStrings GHC extension.
+string. In order for this to compile, we need to use the ``OverloadedStrings`` GHC extension.
 
 .. code:: haskell
 
       {-# LANGUAGE OverloadedStrings   #-}
 
-If we now run the same scenario in the playground with the new code, we
-will see the custom error message that we added.
+Then, we can update our validator.
 
-.. figure:: img/playground_week2_11.png
+.. code:: haskell
+
+      mkValidator _ _ _ = traceError "BURNT!"
+
+If we now run the same scenario in the playground with the new code, we will see the custom error message that we added.
+
+.. code::
+
+      , Slot 2: 00000000-0000-4000-8000-000000000002 {Contract instance for wallet 3}:
+            Contract instance stopped with error: "WalletError (ValidationError (ScriptFailure (EvaluationError [\"BURNT!\"])))" ]
+
+.. figure:: img/iteration2/pic__00032.png
 
 Example 3 - Forty Two
 ~~~~~~~~~~~~~~~~~~~~~
