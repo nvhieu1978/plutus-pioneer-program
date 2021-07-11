@@ -376,21 +376,37 @@ And here we see that we have an ``unScript`` function, which we can run
       
 And here you can see an honest-to-goodness representation of the Plutus Core script for the validator.
 
-Back to the code, there are two more types that we want the value of -
-the validator hash and the address. These are easy to define now that we
-have our validator.
+Back to the code.
+
+Now we have our first validator, there are two more types that we can define.
+
+One is the ``ValidatorHash``, which, as the name suggests is the hash of the validator.
 
 .. code:: haskell
 
       valHash :: Ledger.ValidatorHash
       valHash = Scripts.validatorHash validator
 
+And, we can also turn the validator into a script address, which is the script's address on the blockchain.
+
+.. code:: haskell
+
       scrAddress :: Ledger.Address
       scrAddress = ScriptAddress valHash
 
-Now we have a script address represented as *scrAddress*.
+Now we have a script address represented as ``scrAddress``.
 
-With the exception of the *mkValidator* function logic (in our case, one
+We can look at these two results in the REPL
+
+.. code:: haskell
+
+      Prelude PlutusTx Ledger.Scripts Week02.Gift> valHash
+      c3168d465a84b7f50c2eeb51ccacd53a305bd7883787adb54236d8d17535ca14
+
+      Prelude PlutusTx Ledger.Scripts Week02.Gift> scrAddress
+      Address {addressCredential = ScriptCredential c3168d465a84b7f50c2eeb51ccacd53a305bd7883787adb54236d8d17535ca14, addressStakingCredential = Nothing}
+
+With the exception of the ``mkValidator`` function logic (in our case, one
 line), the rest of the code we have written so far is boilerplate and
 will be very similar for all Plutus scripts.
 
