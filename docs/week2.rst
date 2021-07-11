@@ -414,81 +414,83 @@ In order to actually try this script, we need wallet code. The focus of
 this lecture is validation and not wallet code, but briefly, here is the
 rest of the code.
 
-Two endpoints are defined. The *give* endpoint will take an Integer
-argument to specify the number of Lovelace that will be deposited to the
-contract. The *grab* endpoint will take no argument and will simply look
-for UTxOs at this script address and consume them.
+Two endpoints are defined. Endpoints are ways for a user to trigger something with input parameters.
+
+The ``give`` endpoint will take an ``Integer`` argument to specify the number of lovelace that will be deposited to the contract. 
+
+The ``grab`` endpoint will take no argument and will simply look for UTxOs at this script address and consume them.
 
 .. code:: haskell
 
       type GiftSchema =
-         BlockchainActions
-            .\/ Endpoint "give" Integer
-            .\/ Endpoint "grab" ()
+                  Endpoint "give" Integer
+              .\/ Endpoint "grab" ()
 
-*Give* takes the Integer argument and uses the helper function
-*mustPayToOtherScript* which takes the *valHash* and a Datum that, in
-this example, is completely ignored. It uses the *Datum* constructor to
-turn a *Data* into a *Datum*. In this case the *Data* is created using
-the *Constr* constructor taking a 0 and an empty list. Finally the
-amount to send to the address is specified using the helper function
-*Ada.lovelaceValueOf*.
+The ``give`` endpoint uses the helper function ``mustPayToOtherScript`` which takes the ``valHash`` of the recipient script and a ``Datum`` that, in this example, is 
+completely ignored. It uses the ``Datum`` constructor to turn a ``Data`` into a ``Datum``. In this case the ``Data`` is created using
+the ``Constr`` constructor taking a 0 and an empty list. 
 
-The transaction is then submitted, the script waits for it to be
-confirmed and then prints a log message.
+Finally the amount to send to the address is specified using the helper function ``Ada.lovelaceValueOf``.
+
+The transaction is then submitted, the script waits for it to be confirmed and then prints a log message.
 
 .. code:: haskell
 
-      give :: (HasBlockchainActions s, AsContractError e) => Integer -> Contract w s e ()
+      give :: AsContractError e => Integer -> Contract w s e ()
       give amount = do
          let tx = mustPayToOtherScript valHash (Datum $ Constr 0 []) $ Ada.lovelaceValueOf amount
          ledgerTx <- submitTx tx
          void $ awaitTxConfirmed $ txId ledgerTx
          logInfo @String $ printf "made a gift of %d lovelace" amount
 
-The *grab* endpoint is a little bit more complicated. We use *utxoAt*
-with our shiny new Plutus script address *scrAddress* to lookup all the
-UTxOs sitting at that address. We then need lookups which will be
-explained in a later lecture.
+The ``grab`` endpoint is a little bit more complicated. 
 
-We then define the transaction by using *mustSpendScriptOutput* for each
-UTxO found. We also pass a Redeemer which is completely ignored in our
-example, so we can put anything there - in this case a Redeemer created
-using the *I* constructor of type *Data* will a value of 17.
+We use ``utxoAt`` with our new script address ``scrAddress`` to lookup all the UTxOs sitting at that address. We then need lookups, which will be used by the wallet
+to construct the transaction. Here, we tell the wallet where to find all the UTxOs, and we inform it about the validator. Remember, if you want to consume a UTxO
+sitting at a script address, then the spending transaction needs to provide the validator code, whereas the transaction that produces the UTxO only needs to provide the hash.
+
+We then define the transaction by using ``mustSpendScriptOutput`` for each UTxO found. This is saying that every UTxO sitting at this script address must be spent
+by the transaction we are constructing.
+
+We also pass a redeemer which is completely ignored in our example, so we can put anything there - in this case a redeemer created using the ``I`` constructor of type ``Data`` with a value of ``17``.
 
 Again, we submit, wait for confirmation, and then write a log message.
 
 .. code:: haskell
 
-      grab :: forall w s e. (HasBlockchainActions s, AsContractError e) => Contract w s e ()
+      grab :: forall w s e. AsContractError e => Contract w s e ()
       grab = do
          utxos <- utxoAt scrAddress
          let orefs   = fst <$> Map.toList utxos
-            lookups = Constraints.unspentOutputs utxos      <>
-                        Constraints.otherScript validator
+            lookups  = Constraints.unspentOutputs utxos      <>
+                       Constraints.otherScript validator
             tx :: TxConstraints Void Void
-            tx      = mconcat [mustSpendScriptOutput oref $ Redeemer $ I 17 | oref <- orefs]
+            tx       = mconcat [mustSpendScriptOutput oref $ Redeemer $ I 17 | oref <- orefs]
          ledgerTx <- submitTxConstraintsWith @Void lookups tx
          void $ awaitTxConfirmed $ txId ledgerTx
          logInfo @String $ "collected gifts"
 
-We then have some boilerplate.
+Finally, we put it all together in the ``endpoints`` function. This is boilerplate code that is telling the wallet to give the option of certain endpoints to 
+the user and then, once one has been selected, to recurse and continue to offer the same options again and again. In the case of ``give`` the user will be
+required to provide the ``Integer`` argument.
 
 .. code:: haskell
 
       endpoints :: Contract () GiftSchema Text ()
       endpoints = (give' `select` grab') >> endpoints
-         where
-         give' = endpoint @"give" >>= give
-         grab' = endpoint @"grab" >>  grab
+        where
+          give' = endpoint @"give" >>= give
+          grab' = endpoint @"grab" >>  grab
 
-And these last two lines are just for the playground. As we saw in
-lecture 1, for example, the *mkKnownCurrencies* list is used to define
-tokens for the playground.
+Then we have a little piece of boilerplate.
 
 .. code:: haskell
 
-         mkSchemaDefinitions ''GiftSchema
+      mkSchemaDefinitions ''GiftSchema
+
+And then some code that is used only by the Plutus Playground which allows us to specify additional tokens that can be used for testing.
+
+.. code:: haskell
 
          mkKnownCurrencies []
 
