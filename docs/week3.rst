@@ -51,44 +51,43 @@ start looking at the context.
 ScriptContext
 -------------
 
-The *ScriptContext* type is defined in package *plutus-ledger-api*,
+The ``ScriptContext`` type is defined in package ``plutus-ledger-api``,
 which is a package that, until now, we haven't needed. But now we do
-need it, and it is included in this week's cabal.project file. It is
-defined in module *Plutus.V1.Ledger.Contexts*.
+need it, and it is included in this week's ``.cabal`` file. It is
+defined in module ``Plutus.V1.Ledger.Contexts``.
 
 .. code:: haskell
 
-      data ScriptContext = ScriptContext{scriptContextTxInfo :: TxInfo, scriptContextPurpose :: ScriptPurpose }
+      data ScriptContext = ScriptContext { 
+                  scriptContextTxInfo :: TxInfo, 
+                  scriptContextPurpose :: ScriptPurpose 
+            }
 
-It is a record type (a Haskell type where the fields are given names,
-rather than being referred to only by their position and type, although
-it can still be treated in such a manner if desired).
+It is a record type with two fields.
 
-The second field is of type *ScriptPurpose*, which is defined in the
-same module. It defines for which purpose a script is being run.
+The second field is of type ``ScriptPurpose``, which is defined in the same module. It defines for which purpose a script is being run.
 
 .. code:: haskell
 
-      -- | Purpose of the script that is currently running
       data ScriptPurpose
          = Minting CurrencySymbol
          | Spending TxOutRef
          | Rewarding StakingCredential
          | Certifying DCert
 
-For us, the most important is *Spending*. This is what we have talked
+For us, the most important is ``Spending``. This is what we have talked
 about so far in the context of the (E)UTxO model. This is when a script
 is run in order to validate a spending input for a transaction.
 
-The *Minting* purpose comes into play when you want to define a native
+The ``Minting`` purpose comes into play when you want to define a native
 token. Its purpose us to describe under which circumstances the native
 token can be minted or burned.
 
-There are also two new brand new purposes - *Rewarding* - related to
-staking and *Certifying* - related to stake delegation.
+There are also two new brand new purposes - ``Rewarding`` - related to
+staking and ``Certifying`` - related to stake delegation.
 
-The most interesting field is *scriptContextTxInfo* which is of type
-*TxInfo*, also defined in the same module.
+The most interesting field, the one that contains the actual context, is ``scriptContextTxInfo``, which is of type
+``TxInfo``, also defined in the same module.
 
 .. code:: haskell
 
