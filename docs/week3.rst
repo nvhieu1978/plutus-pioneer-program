@@ -3,119 +3,31 @@ Week 03 - Script Context
 
 .. note::
       This is a written version of `Lecture
-      #3 <https://youtu.be/Lk1eIVm_ZTQ>`__.
+      #3, Iteration #2 <https://www.youtube.com/watch?v=6_rfCCY9_gY>`__.
 
       In this lecture we learn about the script context (the third validation
       argument), handling time, and parameterized contracts.
 
-Housekeeping
-------------
+      The code in this lecture uses Plutus commit ``81ba78edb1d634a13371397d8c8b19829345ce0d``.
 
-For this lecture we will be working with a later commit of Plutus than
-in previous lectures. You will find the commit in the cabal.project file
-for Week03.
+Before We Start
+---------------
 
-::
+Since the last lecture there has been an update to the playground, which is present in the Plutus commit we are using for this lecture (see note above).
 
-      cd /path/to/Plutus
-      git checkout 3aa86304e9bfc425667051a8a94db73fcdc38878
+There was an issue whereby the timeout, which has hardcoded into the playground was too short. This would cause simulations to fail if they took longer than the
+hardcoded timeout.
 
-It would, of course, be better for everyone if we could keep the Plutus
-dependencies stable, but this is not really possible as Plutus is
-evolving very quickly while heading towards the Alonzo release, where
-Plutus is fully integrated into the Cardano node.
+There is now an option when you start the Plutus Playground Server which allows you to specify the timeout. The following example sets the timeout to 120 seconds.
 
-If we wait too long and stay on an outdated version, then when we
-finally have to upgrade to use Plutus on the testnet, there will be lots
-of changes.
+.. code::
 
-This does mean that some of the code from the first two lectures will
-not compile against the new version.
-
-But, luckily, the changes are not that bad.
-
-Let's take the last example from Week 02 and port it to the new Plutus
-version to see what has changed.
-
-Porting IsData
-~~~~~~~~~~~~~~
-
-Code Changes
-^^^^^^^^^^^^
-
-The first difference is in the *mkValidator* function.
-
-.. code:: haskell
-
-      mkValidator :: () -> MySillyRedeemer -> ScriptContext -> Bool
-      mkValidator () (MySillyRedeemer r) _ = traceIfFalse "wrong redeemer" $ r == 42
-
-In the previous version, the third argument was called *ValidatorCtx*.
-Luckily, we have not yet looked at this argument in detail.
-
-The second change is where we create the scrAddress.
-
-.. code:: haskell
-
-      scrAddress :: Ledger.Address
-      scrAddress = scriptAddress validator
-
-Previously, *scrAddress* was created using *ScriptAddress* (capital S),
-passing in a validator hash. This is because the address type has now
-changed in order to allow a component of the address relating to a
-staking address. But there is still a smart constructor *scriptAddress*
-(small s).
-
-We don't need the validator hash anymore. It still exists and we could
-compute it, but we don't need it.
-
-Playground Changes
-^^^^^^^^^^^^^^^^^^
-
-There have also been some changes in the playground.
-
-One is a pleasant surprise. In previous lectures, we needed to remove
-the *module* header in the script after copy-pasting the code into the
-playground. We no longer need to do that.
-
-Another interesting change is that fees are now considered in the
-playground. They are not yet realistic. The fees are always 10 lovelace,
-but in the real system the fees will depend on the memory consumption
-and the time it takes to execute the validators.
-
-But, in any case, as there is now a fee of 10 lovelace, it no longer
-makes sense to have examples with such small balances in the wallets.
-So, instead of starting with 10 lovelace in each wallet, we should
-choose a bigger number, for example 1000.
-
-Let's look at the changes in the playground.
-
-.. figure:: img/week03__00000.png
-   :alt: 
-
-The Genesis transaction is the same, with the exception that the wallets
-are now given 1000 lovelace each, rather than 10.
-
-.. figure:: img/week03__00001.png
-   :alt: 
-
-Now, we see the *give* transaction, with an addition fee output of 10
-lovelace. This 10 lovelace has been deducted from the UTxO that
-represents the change of 300 (1000-700) for wallet 1.
-
-.. figure:: img/week03__00002.png
-   :alt: 
-
-Now, the *grab*. Again, 10 lovelace in fees is deducted from the 700
-lovelace that Wallet 2 grabbed.
-
-.. figure:: img/week03__00003.png
-   :alt: 
+      plutus-playground-server -i 120s
 
 Recap
 -----
 
-When we explained the (E)UTxO model in Lecture One, we mentioned that in
+When we explained the (E)UTxO model in the first lecture, we mentioned that in
 order to unlock a script address, the script attached to the address is
 run, and that script gets three pieces of information - the *Datum*, the
 *Redeemer* and the *Context*.
@@ -124,18 +36,17 @@ In the second lecture, we saw examples of that, and we saw how it
 actually works in Haskell.
 
 We saw the low-level implementation, where all three arguments are
-represented by the *Data* type. We also saw that in practice this is not
+represented by the ``Data`` type. We also saw that in practice this is not
 used.
 
-Instead, we use the typed version, where *Datum* and *Redeemer* can be
-custom types (as long as they implement the *IsData* type class), and
-where the third argument is of type *ScriptContext* (previously
-*ValidatorCtx*).
+Instead, we use the typed version, where the datum and redeemer* can be
+custom types (as long as they implement the ``IsData`` type class), and
+where the third argument is of type ``ScriptContext``.
 
-In the examples we have seen so far we have looked at the *Datum* and
-the *Redeemer*, but we have always ignored the *Context*. But the
-*Context* is, of course, very important. So, in this lecture we will
-start looking at the *Context*.
+In the examples we have seen so far we have looked at the datum and
+the redeemer, but we have always ignored the context. But the
+context is, of course, very important. So, in this lecture we will
+start looking at the context.
 
 ScriptContext
 -------------
