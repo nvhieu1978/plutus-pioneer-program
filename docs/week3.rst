@@ -91,10 +91,8 @@ The most interesting field, the one that contains the actual context, is ``scrip
 
 .. code:: haskell
 
-      -- | A pending transaction. This is the view as seen by validator scripts, so some details are stripped out.
       data TxInfo = TxInfo
          { txInfoInputs      :: [TxInInfo] -- ^ Transaction inputs
-         , txInfoInputsFees  :: [TxInInfo]     -- ^ Transaction inputs designated to pay fees
          , txInfoOutputs     :: [TxOut] -- ^ Transaction outputs
          , txInfoFee         :: Value -- ^ The fee paid by this transaction.
          , txInfoForge       :: Value -- ^ The 'Value' forged by this transaction.
@@ -107,35 +105,32 @@ The most interesting field, the one that contains the actual context, is ``scrip
          -- ^ Hash of the pending transaction (excluding witnesses)
          } deriving (Generic)
 
-It describes the spending transaction. In the (E)UTxO model, the context
-of validation is the spending transaction and its inputs and outputs.
-This context is expressed in the *TxInfo* type.
+It describes the spending transaction. In the (E)UTxO model, the context of validation is the spending transaction and its 
+inputs and outputs. This context is expressed in the ``TxInfo`` type.
 
-In particular you will see the list of all the inputs (*txInfoInputs*)
-and the list of all the outputs (*txInfoOutputs*), whose types provide a
-variety of fields to drill into each individual input or output.
+There are a couple of fields that are global to the whole transaction and in particular we have the list of all the inputs ``txInfoInputs``
+and the list of all the outputs ``txInfoOutputs``. Each of those has a variety of fields to drill into each individual input or output.
 
-We also see fields for fees *txFee*, the forge value *txInfoForge*, used
-when minting or burning native tokens.
+We also see fields for fees ``txFee``, the forge value ``txInfoForge``, used when minting or burning native tokens.
 
-The field *txInfoValidRange*, which we will come to in a moment, defines
-the slot range for which this transaction is valid.
+Then we have a list of delegation certificates in ``txInfoDCert`` and a field ``txInfoWdrl`` to hold information about staking withdrawals.
 
-The *txInfoData* field is a list associating *Datums* with their
-respective hashes. If there is a transaction output to a script address
-that carries some *Datum*, you don't need to include the *Datum*, you
-can just include the *Datum* hash. However, you can optionally attach
-the *Datum*, in which case it will be done in the *txInfoData* list.
+The field ``txInfoValidRange``, which we will look at in much more detail in a moment, defines the slot range for which this transaction is valid.
 
-The *txInfoId* field is a hash of the transaction including all its
-inputs and outputs.
+``txInfoSignatories`` is the list of public keys that have signed this transaction.
+
+Transactions that spend a script output need to include the datum of the script output.
+The ``txInfoData`` field is a list associating datums with their respective hashes. If there is a transaction output to a script address
+that carries some datum, you don't need to include the datum, you can just include the datum hash. However, scripts that spend an output do need to include the datum, in which case it will be included in the ``txInfoData`` list.
+
+Finally, the ``txInfoId`` field is the ID of this transaction.
 
 txInfoValidRange
 ~~~~~~~~~~~~~~~~
 
-While there is a lot of information contained in this *txInfo* type, for
+While there is a lot of information contained in this ``txInfo`` type, for
 our first example of how to use the third argument to validation, we
-will concentrate on the *txInfoValidRange* field.
+will concentrate on the ``txInfoValidRange`` field.
 
 This brings us to an interesting dilemma. We have stressed several times
 that the big advantage that Cardano has over something like Ethereum is
@@ -157,7 +152,7 @@ after a certain time has been reached.
 
 We saw an example of this in lecture one - the auction example, where
 bids are only allowed until the deadline has been reached, and the
-*close* endpoint can only be called after the deadline has passed.
+``close`` endpoint can only be called after the deadline has passed.
 
 That seems to be a contradiction, because time is obviously flowing. So,
 when you try to validate a transaction that you are constructing in your
@@ -165,10 +160,10 @@ wallet, the time that you are doing that can, of course, be different
 than the time that the transaction arrives at a node for validation. So,
 it's not clear how to bring these two together so that validation is
 deterministic, and to guarantee that if, and only if, validation
-succeeds in the wallet, it will also succeed at the node.
+succeeds in the wallet, it will also succeed in the node.
 
 The way Cardano solves that, is by adding the slot range field
-*txInfoValidRange* to a transaction, which essentially says "This
+``txInfoValidRange`` to a transaction, which essentially says "This
 transaction is valid between *this* and *that* slot".
 
 When a transaction gets submitted to the blockchain and validated by a
