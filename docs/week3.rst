@@ -409,14 +409,15 @@ Example - Vesting
 Imagine you want to give a gift of Ada to a child. You want the child to own the Ada, but you only want the child to have access to it he or she
 turns eighteen.
 
-Using Plutus, it is very easy to implement a vesting scheme like that.
+Using Plutus, it is very easy to implement. As our first contract that will look at the context argument, we will
+implement a contract that implements a vesting scheme. Money will be put into a script and then it can be retrieved by a certain person, but only once
+a certain deadline has been reached.
 
-We start by copying the IsData function, the one we modified at the
-start of the lecture, into a new module called Vesting.
+We start by copying the ``IsData`` contract from lecture two into a new module called ``Vesting``. 
 
-The first step is to think about the *Datum* and *Redeemer*.
+The first step is to think about the types for the datum and redeemer.
 
-For *Datum* it makes sense to have two pieces of information:
+For datum, it makes sense to have two pieces of information:
 
 -  The beneficiary
 -  The deadline
@@ -427,7 +428,7 @@ So, let's define this type:
 
       data VestingDatum = VestingDatum
          { beneficiary :: PubKeyHash
-         , deadline    :: Slot
+         , deadline    :: POSIXTime
          } deriving Show
 
       PlutusTx.unstableMakeIsData ''VestingDatum
