@@ -191,156 +191,113 @@ That means that slot intervals that are defined for transactions mustn't have a 
 future as it is possible to know what the slot length will be. This happens to be something like 36 hours. We know that if there is going to be a hard fork, we would
 know about it at least 36 hours in advance.
 
-Slot
-~~~~
+POSIXTimeRange
+~~~~~~~~~~~~~~
 
-One relevant module, found in package ``plutus-ledger-api`` is ``Plutus.V1.Ledger.Slot``.
-
-When we look at the file in which *Slot* is defined, we see that it is a
-type wrapper around *Integer*.
+Let's look at this ``POSIXTimeRange`` type, which is defined in ``Plutus.V1.Ledger.Time``.
 
 .. code:: haskell
 
-      -- | The slot number. This is a good proxy for time, since on the Cardano blockchain
-      -- slots pass at a constant rate.
-      newtype Slot = Slot { getSlot :: Integer }
-         deriving stock (Haskell.Eq, Haskell.Ord, Show, Generic)
-         deriving anyclass (FromJSON, FromJSONKey, ToJSON, ToJSONKey, NFData)
-         deriving newtype (Haskell.Num, AdditiveSemigroup, AdditiveMonoid, AdditiveGroup, Enum, Eq, Ord, Real, Integral, Serialise, Hashable, PlutusTx.IsData)
+      type POSIXTimeRange = Interval POSIXTime.
 
-In order to construct a value of type *Slot*, we can use the *Slot*
-constructor, but it's even easier if you look at the implemented type
-classes, where we can see that it also implements the *Num* type class,
-which means that we can use numeric literals, so we can simply write 17,
-for example, rather than "Slot 17", or "Slot {getSlot=17}".
-
-The definition of *SlotRange* is
+It is a type synonym for ``Interval POSIXTime`` and we see that ``Interval`` is defined by a ``LowerBound`` and an ``UpperBound``.
 
 .. code:: haskell
 
-      -- | An 'Interval' of 'Slot's.
-      type SlotRange = Interval Slot
+      Interval
+            ivFrom :: LowerBound a
+            inTo   :: UpperBound a      
 
-So *SlotRange* is an *Interval Slot* - so what is *Interval*? That is
-defined in a module in the same package - *plutus-ledger-api*.
-
-This is more general and is not necessarily for *Slot*\ s. Here, we are
-only concerned with the case where the type variable *a* is *Slot*.
+If we drill into ``LowerBound`` we see the constructor
 
 .. code:: haskell
 
-      --   The interval can also be unbounded on either side.
-      data Interval a = Interval { ivFrom :: LowerBound a, ivTo :: UpperBound a }
-         deriving stock (Haskell.Eq, Haskell.Ord, Show, Generic)
-         deriving anyclass (FromJSON, ToJSON, Serialise, Hashable, NFData)
+      data LowerBound a = LowerBound (Extended a) Closure
 
-There are some slight complications. For example, you can specify
-whether one or both of the bounds are inclusive, and you have the
-special case where the upper bound is infinity and the case where the
-lower bound is the beginning of time.
+``Closure`` is a synonym for ``Bool`` and specifies whether a bound is included in the ``Interval`` or not.      
 
-Normally, we don't have to deal with types directly because we have nice
-helper functions. The most general of these helper functions is probably
-the *interval* function, which takes an inclusive lower bound and an
-inclusive upper bound and constructs an interval from those values.
+``Extended`` can be ``NegInf`` for negative infinity, ``PosInf`` for positive infinity, or ``Finite a``.
 
-The comment on this function in the commit we are working with in this
-lecture is incorrect - it claims that the upper bound is not inclusive,
-but it actually is.
-
-.. code:: haskell
-
-      interval :: a -> a -> Interval a
-      interval s s' = Interval (lowerBound s) (upperBound s')
-
-There is also the *singleton* helper, which constructs an interval which
-consists of just one slot.
-
-.. code:: haskell
-
-      singleton :: a -> Interval a
-      singleton s = interval s s
-
-We have *from* which constructs an *Interval* starting from a given slot
-and extending to the end of time.
-
-.. code:: haskell
-
-      from :: a -> Interval a
-      from s = Interval (lowerBound s) (UpperBound PosInf True)
-
-And we have *to*, which is the opposite. It constructs an *Interval*
-starting from the genesis block up to, and including, the given slot.
-Again, the comments in the code for the commit we are working with
-claims that it is not inclusive, but it is.
-
-.. code:: haskell
-
-      to :: a -> Interval a
-      to s = Interval (LowerBound NegInf True) (upperBound s)
-
-We have *always* which contains all slots from the beginning of time
-until the end of eternity. This is the default.
-
-.. code:: haskell
-
-      always :: Interval a
-      always = Interval (LowerBound NegInf True) (UpperBound PosInf True)
-
-And we have the opposite, *never*, which contains no slots.
-
-.. code:: haskell
-
-      never :: Interval a
-      never = Interval (LowerBound PosInf True) (UpperBound NegInf True)
-
-In addition to these helper functions for constructing values of type
-*Interval*, we have various helpers for working with *Interval*\ s.
-
-The *member* function checks whether a value is contained within an
-*Interval*.
+We also find some helper functions including the ``member`` function which checks if a given ``a`` is part of a given ``Interval``, so long as the type of ``a`` is a subtype 
+of ``Ord``, which is the case for ``POSIXTime``.
 
 .. code:: haskell
 
       member :: Ord a => a -> Interval a -> Bool
       member a i = i `contains` singleton a
 
-The *overlaps* function checks whether two intervals overlap, that is,
-whether there is a value that is a member of both intervals.
+``interval`` is a smart constructor for the ``Interval`` type which creates an ``Interval`` with an inclusive upper and lower bound.
 
 .. code:: haskell
 
-      overlaps :: Ord a => Interval a -> Interval a -> Bool
-      overlaps l r = isEmpty (l `intersection` r)
-
-The *intersection* function determines the largest interval that is
-contained in both the given intervals. This is an *Interval* that starts
-from the largest lower bound of the two intervals and extends until the
-smallest upper bound.
+      interval :: a -> a -> Interval a
+      interval s s' = Interval (lowerBound s) (upperBound s')
+     
+Then we have ``from`` which constructs an ``Interval`` which starts at ``a`` and lasts until eternity.
 
 .. code:: haskell
 
-      intersection :: Ord a => Interval a -> Interval a -> Interval a
-      intersection (Interval l1 h1) (Interval l2 h2) = Interval (max l1 l2) (min h1 h2)
+      from :: a -> Interval a
+      from s = Interval (lowerBound s) (UpperBound PosInf True)
 
-The function *hull* gives the smallest interval containing both the
-given intervals.
+And we have ``to``, which is the opposite. It constructs an ``Interval`` starting from the genesis block up to, and including ``a``.
+
+.. code:: haskell
+
+      to :: a -> Interval a
+      to s = Interval (LowerBound NegInf True) (upperBound s)
+
+``always`` is the default ``Interval`` which includes all times.
+
+.. code:: haskell
+
+      always :: Interval a
+      always = Interval (LowerBound NegInf True) (UpperBound PosInf True)
+      
+And we have the opposite, ``never``, which contains no slots.
+
+.. code:: haskell
+
+      never :: Interval a
+      never = Interval (LowerBound PosInf True) (UpperBound NegInf True)
+
+There is also the ``singleton`` helper, which constructs an interval which consists of just one slot.
+
+.. code:: haskell
+
+      singleton :: a -> Interval a
+      singleton s = interval s s      
+
+The function ``hull`` gives the smallest interval containing both the given intervals.
 
 .. code:: haskell
 
       hull :: Ord a => Interval a -> Interval a -> Interval a
       hull (Interval l1 h1) (Interval l2 h2) = Interval (min l1 l2) (max h1 h2)
 
-The *contains* function takes two intervals and determines if the second
-interval is completely contained within the first one.
+The ``intersection`` function determines the largest interval that is contained in both the given intervals. This is an ``Interval`` that starts
+from the largest lower bound of the two intervals and extends until the smallest upper bound.
+
+.. code:: haskell
+
+      intersection :: Ord a => Interval a -> Interval a -> Interval a
+      intersection (Interval l1 h1) (Interval l2 h2) = Interval (max l1 l2) (min h1 h2)    
+      
+The ``overlaps`` function checks whether two intervals overlap, that is, whether there is a value that is a member of both intervals.
+
+.. code:: haskell
+
+      overlaps :: Ord a => Interval a -> Interval a -> Bool
+      overlaps l r = isEmpty (l `intersection` r)
+
+``contains`` takes two intervals and determines if the second interval is completely contained within the first one.
 
 .. code:: haskell
 
       contains :: Ord a => Interval a -> Interval a -> Bool
       contains (Interval l1 h1) (Interval l2 h2) = l1 <= l2 && h2 <= h1
 
-And we have the *before* and *after* functions to determine if a given
-*Slot* is before or after a given *Interval*, respectively.
+And we have the ``before`` and ``after`` functions to determine, if a given time is, respectively, before or after everything in a given ``Interval``.
 
 .. code:: haskell
 
@@ -354,124 +311,102 @@ Let's have a play in the REPL.
 
 .. code:: haskell
 
-      Prelude Week03.IsData> import Plutus.V1.Ledger.Slot 
-      Prelude Plutus.V1.Ledger.Slot Week03.IsData> import Plutus.V1.Ledger.Interval 
+      Prelude Week03.Homework1> import Plutus.V1.Ledger.Interval
+      Prelude Plutus.V1.Ledger.Interval Week03.Homework1>
 
-There are two ways to define a slot. First, you can use the *Slot*
-constructor.
-
-.. code:: haskell
-
-      Prelude Plutus.V1.Ledger.Slot Plutus.V1.Ledger.Interval Week03.IsData> Slot 3
-      Slot {getSlot = 3}
-
-Secondly, you can just write it as an *Integer*, but in this case you
-need to tell the compiler what type it is.
+Let's construct the ``Interval`` between 10 and 20, inclusive.
 
 .. code:: haskell
 
-      Prelude Plutus.V1.Ledger.Slot Plutus.V1.Ledger.Interval Week03.IsData> 3 :: Slot
-      Slot {getSlot = 3}
+      Prelude Plutus.V1.Ledger.Interval Week03.Homework1> interval (10 :: Integer) 20
+      Interval {ivFrom = LowerBound (Finite 10) True, ivTo = UpperBound (Finite 20) True}
 
-Let's use some of the helper functions for constructing intervals. This
-will give us slots 3,4,5,6,7,8,9,10:
-
-.. code:: haskell
-
-      Prelude Plutus.V1.Ledger.Slot Plutus.V1.Ledger.Interval Week03.IsData> interval (Slot 3) 10
-      Interval {ivFrom = LowerBound (Finite (Slot {getSlot = 3})) True, ivTo = UpperBound (Finite (Slot {getSlot = 10})) True}
-
-You see that there are two finite slots defined as the lower and upper
-bounds, and that they both have the value *True*, which indicates that
-they are both inclusive bounds.
-
-We can check whether a slot is a member of an interval:
+We can check whether a value is a member of an interval:
 
 .. code:: haskell
 
-      Prelude Plutus.V1.Ledger.Slot Plutus.V1.Ledger.Interval Week03.IsData> member 5 $ interval (Slot 3) 10
+      Prelude Plutus.V1.Ledger.Interval Week03.Homework1> member 9 $ interval (10 :: Integer) 20
+      False
+      
+      Prelude Plutus.V1.Ledger.Interval Week03.Homework1> member 10 $ interval (10 :: Integer) 20
       True
-
-      Prelude Plutus.V1.Ledger.Slot Plutus.V1.Ledger.Interval Week03.IsData> member 3 $ interval (Slot 3) 10
+      
+      Prelude Plutus.V1.Ledger.Interval Week03.Homework1> member 12 $ interval (10 :: Integer) 20
       True
-
-      Prelude Plutus.V1.Ledger.Slot Plutus.V1.Ledger.Interval Week03.IsData> member 10 $ interval (Slot 3) 10
+      
+      Prelude Plutus.V1.Ledger.Interval Week03.Homework1> member 20 $ interval (10 :: Integer) 20
       True
+      
+      Prelude Plutus.V1.Ledger.Interval Week03.Homework1> member 21 $ interval (10 :: Integer) 20
+      False
+     
+We can use the ``from`` constructor. Here the lower bound is again a finite slot, but the upper bound is positive infinity.
 
-      Prelude Plutus.V1.Ledger.Slot Plutus.V1.Ledger.Interval Week03.IsData> member 11 $ interval (Slot 3) 10
+.. code:: haskell
+
+      Prelude Plutus.V1.Ledger.Interval Week03.Homework1> member 21 $ from (30 :: Integer)
       False
 
-We can use the *from* constructor. Here we see that the lower bound is
-again a finite slot, but that the upper bound is positive infinity.
-
-.. code:: haskell
-
-      Prelude Plutus.V1.Ledger.Slot Plutus.V1.Ledger.Interval Week03.IsData> from (Slot 20)
-      Interval {ivFrom = LowerBound (Finite (Slot {getSlot = 20})) True, ivTo = UpperBound PosInf True}
-
-And we can check slots for membership of this interval:
-
-.. code:: haskell
-
-      Prelude Plutus.V1.Ledger.Slot Plutus.V1.Ledger.Interval Week03.IsData> member 20 $ from (Slot 20)
+      Prelude Plutus.V1.Ledger.Interval Week03.Homework1> member 30 $ from (30 :: Integer)
+      True
+      
+      Prelude Plutus.V1.Ledger.Interval Week03.Homework1> member 300000 $ from (30 :: Integer)
       True
 
-      Prelude Plutus.V1.Ledger.Slot Plutus.V1.Ledger.Interval Week03.IsData> member 19 $ from (Slot 20)
+And the ``to`` constructor. Here the lower bound is negative infinity, while the upper bound is a finite slot number.
+
+.. code:: haskell
+
+      Prelude Plutus.V1.Ledger.Interval Week03.Homework1> member 300000 $ to (30 :: Integer)
       False
 
-      Prelude Plutus.V1.Ledger.Slot Plutus.V1.Ledger.Interval Week03.IsData> member 1000000 $ from (Slot 20)
-      True
-
-And the *to* constructor. Here we see that now the lower bound is
-negative infinity, while the upper bound is a finite slot number.
-
-.. code:: haskell
-
-      Prelude Plutus.V1.Ledger.Slot Plutus.V1.Ledger.Interval Week03.IsData> to (Slot 100)
-      Interval {ivFrom = LowerBound NegInf True, ivTo = UpperBound (Finite (Slot {getSlot = 100})) True}
-
-And let's check various slots for membership:
-
-.. code:: haskell
-
-      Prelude Plutus.V1.Ledger.Slot Plutus.V1.Ledger.Interval Week03.IsData> member 7 $ to (Slot 100)
-      True
-
-      Prelude Plutus.V1.Ledger.Slot Plutus.V1.Ledger.Interval Week03.IsData> member 100 $ to (Slot 100)
-      True
-
-      Prelude Plutus.V1.Ledger.Slot Plutus.V1.Ledger.Interval Week03.IsData> member 101 $ to (Slot 100)
+      Prelude Plutus.V1.Ledger.Interval Week03.Homework1> member 31 $ to (30 :: Integer)
       False
+      
+      Prelude Plutus.V1.Ledger.Interval Week03.Homework1> member 30 $ to (30 :: Integer)
+      True
 
-Now, let's try the *contains* function:
+      Prelude Plutus.V1.Ledger.Interval Week03.Homework1> member 7 $ to (30 :: Integer)
+      True
+
+Now, let's try the ``intersection`` function on the ``Interval`` from 10 to 20 and the ``Interval`` from 18 to 30.
 
 .. code:: haskell
 
-      Prelude Plutus.V1.Ledger.Slot Plutus.V1.Ledger.Interval Week03.IsData> contains (to $ Slot 100) $ interval 30 50
-      True
+      Prelude Plutus.V1.Ledger.Interval Week03.Homework1> intersection (interval (10 :: Integer) 20) $ interval 18 30
+      Interval {ivFrom = LowerBound (Finite 18) True, ivTo = UpperBound (Finite 20) True}
 
-      Prelude Plutus.V1.Ledger.Slot Plutus.V1.Ledger.Interval Week03.IsData> contains (to $ Slot 100) $ interval 30 110
-      False
+As expected, we get the ``Interval`` that runs from 18 to 20, inclusive.
 
-And *overlaps*:
+We can check whether one ``Interval`` contains another.
 
 .. code:: haskell
 
-      Prelude Plutus.V1.Ledger.Slot Plutus.V1.Ledger.Interval Week03.IsData> overlaps (to $ Slot 100) $ interval 30 110
+      Prelude Plutus.V1.Ledger.Interval Week03.Homework1> contains (to (100 :: Integer)) $ interval 30 80
       True
 
-      Prelude Plutus.V1.Ledger.Slot Plutus.V1.Ledger.Interval Week03.IsData> overlaps (to $ Slot 100) $ interval 101 110
-      False
+      Prelude Plutus.V1.Ledger.Interval Week03.Homework1> contains (to (100 :: Integer)) $ interval 30 100
+      True
 
-And now, we can look, for the first time, at a contract that actually
-looks at the third validation argument, the *Context*, and does
-something interesting with it.
+      Prelude Plutus.V1.Ledger.Interval Week03.Homework1> contains (to (100 :: Integer)) $ interval 30 101
+      False
+            
+We see that as soon as the second ``Interval`` extends to 101, it is no longer fully contained within the ``Interval`` that runs to 100.
+
+However, if we check with ``overlaps``, then it will be true because there are elements, such as 40, that are contained in both intervals.
+
+.. code:: haskell
+
+      Prelude Plutus.V1.Ledger.Interval Week03.Homework1> overlaps (to (100 :: Integer)) $ interval 30 101
+      True
+
+      Prelude Plutus.V1.Ledger.Interval Week03.Homework1> overlaps (to (100 :: Integer)) $ interval 101 110
+      False
 
 Example - Vesting
 -----------------
 
-Imagine you want to give a gift of Ada to a child. You want the child to
-own the Ada, but you only want the child to have access to it he or she
+Imagine you want to give a gift of Ada to a child. You want the child to own the Ada, but you only want the child to have access to it he or she
 turns eighteen.
 
 Using Plutus, it is very easy to implement a vesting scheme like that.
