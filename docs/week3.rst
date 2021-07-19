@@ -169,27 +169,32 @@ transaction is valid between *this* and *that* slot".
 When a transaction gets submitted to the blockchain and validated by a
 node, then before any scripts are run, some general checks are made, for
 example that all inputs are present and that the balances add up, that
-the fees are included and so on. One of those checks is to check that
-the slot range is valid.
+the fees are included and so on. 
 
-This means that we are completely deterministic again because if the
-script is run, we know that we are within the valid slot range.
+One of those checks that happens before validation is to check that the slot range is valid. The 
+node will look at the current time and check that it falls into the valid slot range of the transaction. If it does not, then validation fails immediately without
+ever running the validator scripts.
 
-By default, a script will use the infinite slot range, one that covers
-all slots until the end of time, but we do have the option to set a
-different slot range, and that is what we have to do if we deal with
-time-critical smart contracts, like in the auction example.
+So, if the pre-checks succeed, then this means that the current time does fall into the valid slot range.
+This, in turn, means that we are completely deterministic again. The validation script can simply assume that it is being run at a valid slot.
 
-So, let's look at this slot range type in more detail.
+By default, a script will use the infinite slot range, one that covers all slots starting from the genesis block and running until the end of time.
+
+There is one slight complication with this, and that is that Ouroboros, the consensus protocol powering Cardano doesn't use POSIX time, it uses slots. But Plutus
+uses real time, so we need to be able to convert back and forth between real time and slots. This is no problem so long as the slot time is fixed. Right now it is 
+one second, so right now it is easy. 
+
+However, this could change in the future. There could be a hard fork with some parameter change that would change the slot time. We can't know that in advance.
+We don't know what the slot length will be in ten years, for example.
+
+That means that slot intervals that are defined for transactions mustn't have a definite upper bound that is too far in the future. It must only be as far in the
+future as it is possible to know what the slot length will be. This happens to be something like 36 hours. We know that if there is going to be a hard fork, we would
+know about it at least 36 hours in advance.
 
 Slot
 ~~~~
 
-One relevant module, found in package *plutus-ledger-api* is:
-
-.. code:: haskell
-
-      Plutus.V1.Ledger.Slot
+One relevant module, found in package ``plutus-ledger-api`` is ``Plutus.V1.Ledger.Slot``.
 
 When we look at the file in which *Slot* is defined, we see that it is a
 type wrapper around *Integer*.
