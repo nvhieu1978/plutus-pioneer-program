@@ -634,13 +634,16 @@ Then there is some boilerplate which is just used in the playground.
 In the playground
 ~~~~~~~~~~~~~~~~~
 
-First, let's get Wallet 1 to send some lovelace.
+First, let's add a third wallet. We are going to create a scenario where Wallet 1 makes two gifts to Wallet 2 with different deadlines and also makes one gift to Wallet 3.
 
-.. figure:: img/week03__00004.png
-   :alt: 
+.. figure:: img/iteration2/pic__00043.png
 
-Here we run into a technical problem. We need to supply the beneficiary
-address, but there is no way in the playground to get the public key
+Normally it would be possible to submit both ``give`` transactions in the same slot, but the way our code is implemented, we wait for confirmation, which means
+we need to add a wait action. This is maybe not the best way to do it, but that's how it is for the time being.
+
+.. figure:: img/iteration2/pic__00044.png
+
+Here we run into our first problem. We need to supply the beneficiary address, but there is no way in the playground to get the public key
 hash of a wallet.
 
 But we can get it from the REPL.
