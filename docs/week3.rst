@@ -530,81 +530,106 @@ contains the beneficiary and the deadline. So, there are three pieces of informa
 The ``grab`` endpoint doesn't require any parameters because the beneficiary will just look for UTxOs sitting at the script address and can then check whether they
 are the beneficiary and whether the deadline has passed. If so, they can consume them.
 
+Let's quickly look at the ``give`` endpoint.
+
 .. code:: haskell
 
-      give :: (HasBlockchainActions s, AsContractError e) => GiveParams -> Contract w s e ()
+      give :: AsContractError e => GiveParams -> Contract w s e ()
       give gp = do
-         let dat = VestingDatum
-                     { beneficiary = gpBeneficiary gp
-                     , deadline    = gpDeadline gp
-                     }
-            tx  = mustPayToTheScript dat $ Ada.lovelaceValueOf $ gpAmount gp
-         ledgerTx <- submitTxConstraints inst tx
-         void $ awaitTxConfirmed $ txId ledgerTx
-         logInfo @String $ printf "made a gift of %d lovelace to %s with deadline %s"
-            (gpAmount gp)
-            (show $ gpBeneficiary gp)
-            (show $ gpDeadline gp)
+          let dat = VestingDatum
+                      { beneficiary = gpBeneficiary gp
+                      , deadline    = gpDeadline gp
+                      }
+              tx  = mustPayToTheScript dat $ Ada.lovelaceValueOf $ gpAmount gp
+          ledgerTx <- submitTxConstraints typedValidator tx
+          void $ awaitTxConfirmed $ txId ledgerTx
+          logInfo @String $ printf "made a gift of %d lovelace to %s with deadline %s"
+              (gpAmount gp)
+              (show $ gpBeneficiary gp)
+              (show $ gpDeadline gp)
 
-The *grab* endpoint is a bit more involved. Here, the grabber needs to
-find the UTxOs that they can actually consume, which is performed by the
-*isSuitable* helper function.
+First we compute the datum we want to use, and we can get both pieces of information from the ``GiveParams`` which is passed into the function.
 
-This looks at the all UTxOs and only keeps those that are suitable. It
-first checks that the *Datum* hash exists, nad, if so, it deserialises
-it, and, if that succeeds it checks that the beneficiary of the UTxO is
-the public key hash of the grabber. It then checks that the deadline is
-not in the future.
+Then, for the transaction, we add a constraint that there must be an output at this script address with the datum that we just defined and a certain number of
+lovelace, which we also get from the ``GiveParams``.
 
-We see here that, from the wallet, we have access to the current slot
-and to our own public key hash.
+The rest of the function is as before, just with a different log message.
+
+The ``grab`` endpoint is a bit more involved. 
+
+There can be many UTxOs at this script address and some of them might not be suitable for us, either because we are not the beneficiary, or because the deadline has
+not yet passed. If we try to submit a transaction when there are no suitable UTxOs, we will pay fees, but get nothing in return.
 
 .. code:: haskell
 
-      grab :: forall w s e. (HasBlockchainActions s, AsContractError e) => Contract w s e ()
+      grab :: forall w s e. AsContractError e => Contract w s e ()
       grab = do
-         now   <- currentSlot
-         pkh   <- pubKeyHash <$> ownPubKey
-         utxos <- Map.filter (isSuitable pkh now) <$> utxoAt scrAddress
-         if Map.null utxos
-            then logInfo @String $ "no gifts available"
-            else do
+          now   <- currentTime
+          pkh   <- pubKeyHash <$> ownPubKey
+          utxos <- Map.filter (isSuitable pkh now) <$> utxoAt scrAddress
+          if Map.null utxos
+              then logInfo @String $ "no gifts available"
+              else do
                   let orefs   = fst <$> Map.toList utxos
-                     lookups = Constraints.unspentOutputs utxos  <>
-                              Constraints.otherScript validator
-                     tx :: TxConstraints Void Void
-                     tx      = mconcat [mustSpendScriptOutput oref $ Redeemer $ PlutusTx.toData () | oref <- orefs] <>
-                              mustValidateIn (from now)
+                      lookups = Constraints.unspentOutputs utxos  <>
+                                Constraints.otherScript validator
+                      tx :: TxConstraints Void Void
+                      tx      = mconcat [mustSpendScriptOutput oref $ Redeemer $ PlutusTx.toData () | oref <- orefs] <>
+                                mustValidateIn (from now)
                   ledgerTx <- submitTxConstraintsWith @Void lookups tx
                   void $ awaitTxConfirmed $ txId ledgerTx
                   logInfo @String $ "collected gifts"
-      where
-         isSuitable :: PubKeyHash -> Slot -> TxOutTx -> Bool
-         isSuitable pkh now o = case txOutDatumHash $ txOutTxOut o of
-            Nothing -> False
-            Just h  -> case Map.lookup h $ txData $ txOutTxTx o of
+        where
+          isSuitable :: PubKeyHash -> POSIXTime -> TxOutTx -> Bool
+          isSuitable pkh now o = case txOutDatumHash $ txOutTxOut o of
+              Nothing -> False
+              Just h  -> case Map.lookup h $ txData $ txOutTxTx o of
                   Nothing        -> False
                   Just (Datum e) -> case PlutusTx.fromData e of
-                     Nothing -> False
-                     Just d  -> beneficiary d == pkh && deadline d <= now
+                      Nothing -> False
+                      Just d  -> beneficiary d == pkh && deadline d <= now
 
-Note the call:
+First, we get the current time and calculate our public key hash. We then look up all the UTxOs at this address and filter them using the ``isSuitable`` helper function,
+which is defined in the ``where`` clause. 
+
+It first checks the datum hash, and, if it finds it, it attempts to look up the corresponding datum. Recall that the producing transaction, in this case ``give`` doesn't
+have to supply the datum, it need only supply the datum hash. However, in our case we need to have the datum available to the ``grab`` endpoint, so the ``give`` endpoint 
+does provide the datum.
+
+If the ``grab`` endpoint finds the datum, it must deserialise it to the ``Vesting`` type.
+
+If all of this succeeds we can check whether we are the beneficiary and whether the deadline has passed.
+
+At this point, ``utxos`` contains all the UTxOs that we can consume. If we find none, then we just log a message to that effect. If there is at least one, then we
+construct one transaction that consumes all of them as inputs and pays the funds to our wallet.
+
+As ``lookups``, we provide the list of UTxOs as well as the validator script. Recall that, in order to consume UTxOs at this address, the spending transaction must
+provide the validation script.
+
+We then create a transaction that spends all the suitable UTxOs along with a constraint that it must validate in the ``Interval`` which stretches from now until the end of time.
+If we don't provide the interval here, then validation will fail, because the default interval is from genesis until the end of time. The on-chain validation
+would reject this as it needs an interval that is fully contained in the interval stretching from the deadline until the end of time.
+
+We could use the singleton ``Interval`` ``now``, but, if there were any issues, for example network delays, and the transaction arrived at a node a slot or
+two later, then validation would no longer work.
+
+The, we just bundle up the endpoints.
 
 .. code:: haskell
 
-      mustValidateIn (from now)
+      endpoints :: Contract () VestingSchema Text ()
+      endpoints = (give' `select` grab') >> endpoints
+        where
+          give' = endpoint @"give" >>= give
+          grab' = endpoint @"grab" >>  grab
 
-If we do not do this, the default would be the infinite slot range, and
-this would cause validation to fail in our case.
+Then there is some boilerplate which is just used in the playground.
 
-We could use a singleton slot here, but, if there were any issues, for
-example network delays, and the transaction arrived at a node a slot or
-two later, then validation would no longer work.
+.. code:: haskell
 
-Another thing to note is that, if there is no suitable UTxO available,
-we don't even try to submit the transaction. We want to make sure that
-when the grabber submits, they get something in return. Otherwise they
-would have to pay fees for a transaction that doesn't have any outputs.
+      mkSchemaDefinitions ''VestingSchema
+
+      mkKnownCurrencies []
 
 In the playground
 ~~~~~~~~~~~~~~~~~
