@@ -417,12 +417,7 @@ We start by copying the ``IsData`` contract from lecture two into a new module c
 
 The first step is to think about the types for the datum and redeemer.
 
-For datum, it makes sense to have two pieces of information:
-
--  The beneficiary
--  The deadline
-
-So, let's define this type:
+For datum, it makes sense to have two pieces of information, the beneficiary and the deadline. So, let's define this type:
 
 .. code:: haskell
 
@@ -433,9 +428,9 @@ So, let's define this type:
 
       PlutusTx.unstableMakeIsData ''VestingDatum
 
-In this case, we don't need any information in the *Redeemer*, because
-all the information we need about the entity that can claim the Ada and
-the time is contained in the *Context*.
+In order to know if someone can spend this script output, two pieces information are required, i.e. the beneficiary's signature and the time of the transaction. In 
+this case, both those pieces of information are contained in the transaction itself. This means that we don't need any information in the redeemer, so we can just
+use ``()`` for the redeemer.
 
 .. code:: haskell
 
@@ -451,22 +446,47 @@ We need to check two conditions.
 We could probably just write this in one go, but we will write it in a
 more top-down fashion and delegate to some helper functions.
 
-Let's start by writing the conditions without implementing them and by
-also giving appropriate error messages.
-
 .. code:: haskell
 
       mkValidator dat () ctx =
-         traceIfFalse "beneficiary's signature missing" checkSig      &&
-         traceIfFalse "deadline not reached"            checkDeadline
+            mkValidator dat () ctx = traceIfFalse "beneficiary's signature missing" signedByBeneficiary &&
+                                     traceIfFalse "deadline not reached" deadlineReached
       where
-         ...
-         checkSig :: Bool
-         ...
-         checkDeadline :: Bool
-         ...
+            info :: TxInfo
+            info = scriptContextTxInfo ctx
+      
+To check that the transaction is signed by the beneficiary, we can get the public key of the beneficiary from the datum and pass it, along with the transaction
+information to the ``txSignedBy`` function.
 
-Let's look back at the *ScriptContext* type.
+.. code:: haskell
+
+            signedByBeneficiary :: Bool
+            signedByBeneficiary = txSignedBy info $ beneficiary dat
+
+How do we check that the deadline has passed?
+
+.. figure:: img/iteration2/pic__00046.png
+
+Let's consider a transaction with a validity that crosses the deadline, which is shown as the uppermost range in the above diagram.
+
+Recall that before the validator script is run, other checks are made, including the time check. The node checks that the current time falls into the valid range of
+the transaction and only then is the validator run. So we know that, if we are in the validator, the current time lies somewhere within the validity interval.
+
+In the case of the range that crosses the deadline, the validator code cannot know whether the current time is before or after the deadline. In this case, the
+validator must declare that the transaction is invalid.
+
+The second example in the diagram, however, is fine. We still don't know what the current time is exactly, but we know that whatever the time is, it will be after the
+deadline.
+
+So, what we are checking for is that the whole validity interval is to the right of the deadline. One way to do this is to use the ``contains`` function to check
+whether the validity interval is fully contained within the interval that starts from the deadline and extends until the end of time.
+
+.. code:: haskell
+      
+            deadlineReached :: Bool
+            deadlineReached = contains (from $ deadline dat) $ txInfoValidRange info
+
+Let's look back at the ``ScriptContext`` type.
 
 .. code:: haskell
 
