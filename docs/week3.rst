@@ -460,8 +460,8 @@ information to the ``txSignedBy`` function.
 
 .. code:: haskell
 
-            signedByBeneficiary :: Bool
-            signedByBeneficiary = txSignedBy info $ beneficiary dat
+      signedByBeneficiary :: Bool
+      signedByBeneficiary = txSignedBy info $ beneficiary dat
 
 How do we check that the deadline has passed?
 
@@ -483,113 +483,52 @@ whether the validity interval is fully contained within the interval that starts
 
 .. code:: haskell
       
-            deadlineReached :: Bool
-            deadlineReached = contains (from $ deadline dat) $ txInfoValidRange info
+      deadlineReached :: Bool
+      deadlineReached = contains (from $ deadline dat) $ txInfoValidRange info
 
-Let's look back at the ``ScriptContext`` type.
-
-.. code:: haskell
-
-      data ScriptContext = ScriptContext{scriptContextTxInfo :: TxInfo, scriptContextPurpose :: ScriptPurpose }
-
-We are not interest in the script purpose, as we know that it is a
-spending script. The interesting one for us here is *TxInfo*, as this
-provides both the signatures and the timing information.
-
-So let's add a helper function that gets this for us from our third
-argument - *ctx*.
-
-.. code:: haskell
-
-      mkValidator dat () ctx =
-         traceIfFalse "beneficiary's signature missing" checkSig      &&
-         traceIfFalse "deadline not reached"            checkDeadline
-      where
-         info :: TxInfo
-         info = scriptContextTxInfo ctx
-         ...
-         checkSig :: Bool
-         ...
-         checkDeadline :: Bool
-         ...
-
-For the first helper function, *checkSig*, we must check that the
-beneficiary has signed the transaction.
-
-Here we use the ``elem`` function here from the Plutus Prelude, which is
-a copy of the same function from the standard Prelude. You will recall
-that this is because it is not possible to make functions in standard
-Prelude INLINABLE, which is required for our validation scripts to
-compile.
-
-.. code:: haskell
-
-      checkSig = beneficiary dat `elem` txInfoSignatories info
-
-To check the deadline we need the *txInfoValidRange* field of *TxInfo*,
-which gives us a value of type *SlotRange*.
-
-We must check that this transaction is only submitted once the deadline
-has been reached.
-
-As we saw before, the way time is handled is that, during validation,
-before any script is run, it is checked that this range that the
-transaction gives actually includes the current slot.
-
-We don't know exactly what the current slot is because the interval may
-be large, but what we do know is that one of those slots is the current
-time.
-
-So, in order to make sure that the deadline has been reached, we must
-check that all the slots in the slot range are after the deadline. And
-one way to do this, is to ask if the valid slot range is included in the
-interval that starts at the deadline and extends to the end of time.
-
-.. code:: haskell
-
-      checkDeadline = from (deadline dat) `contains` txInfoValidRange info
-
-Remember that if the current slot was not in the *txInfoValidRange*,
-then the validation script would not even be running.
-
-That completes the validation logic. Let's take care of some
-boilerplate.
+That completes the validation logic. Let's take care of some boilerplate.
 
 .. code:: haskell
 
       data Vesting
-      instance Scripts.ScriptType Vesting where
-         type instance DatumType Vesting = VestingDatum
-         type instance RedeemerType Vesting = ()
+      instance Scripts.ValidatorTypes Vesting where
+          type instance DatumType Vesting = VestingDatum
+          type instance RedeemerType Vesting = ()
+      
+      typedValidator :: Scripts.TypedValidator Vesting
+      typedValidator = Scripts.mkTypedValidator @Vesting
+          $$(PlutusTx.compile [|| mkValidator ||])
+          $$(PlutusTx.compile [|| wrap ||])
+        where
+          wrap = Scripts.wrapValidator @VestingDatum @()
 
-      inst :: Scripts.ScriptInstance Vesting
-      inst = Scripts.validator @Vesting
-         $$(PlutusTx.compile [|| mkValidator ||])
-         $$(PlutusTx.compile [|| wrap ||])
-      where
-         wrap = Scripts.wrapValidator @VestingDatum @()
+We will focus more on the wallet part of the script later, but here are the changes.
 
-We will focus more on the wallet part of the script later, but here are
-the changes.
-
-We have created a *GiveParams* type, and modified the *grab* endpoint to
+In addition to some new ``LANGUAGE`` pragmas and some extra imports, we have created a ``GiveParams`` type, and modified the ``grab`` endpoint to
 require no parameters.
+
+The ``VestingSchema`` type defines the endpoints that we want to expose to the user. As in our last example, ``give`` will be used by the user who puts funds into the
+contract, then ``grab`` will be used by the user wanting to claim the funds.
+
+.. code:: haskell
+
+      type VestingSchema =
+         .\/ Endpoint "give" GiveParams
+         .\/ Endpoint "grab" ()
+
+So what parameters do we need for ``give``? The endpoint will create a UTxO at the vesting script address with an amount and a datum. If you recall, our datum
+contains the beneficiary and the deadline. So, there are three pieces of information that we must pass to the ``give`` endpoint.
 
 .. code:: haskell
 
       data GiveParams = GiveParams
          { gpBeneficiary :: !PubKeyHash
-         , gpDeadline    :: !Slot
+         , gpDeadline    :: !POSIXTime
          , gpAmount      :: !Integer
          } deriving (Generic, ToJSON, FromJSON, ToSchema)
 
-      type VestingSchema =
-         BlockchainActions
-            .\/ Endpoint "give" GiveParams
-            .\/ Endpoint "grab" ()
-
-For the *give* endpoint, the *Datum* is constructed from the
-*GiveParams*.
+The ``grab`` endpoint doesn't require any parameters because the beneficiary will just look for UTxOs sitting at the script address and can then check whether they
+are the beneficiary and whether the deadline has passed. If so, they can consume them.
 
 .. code:: haskell
 
