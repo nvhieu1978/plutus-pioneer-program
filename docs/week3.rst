@@ -659,7 +659,7 @@ But we can get it from the REPL.
       Prelude Ledger Wallet.Emulator Week03.Vesting> pubKeyHash $ walletPubKey $ Wallet 3
       dac073e0123bdea59dd9b3bda9cf6037f63aca82627d7abcd5c4ac29dd74003e
             
-.. figure:: img/week03__00047.png
+.. figure:: img/iteration2/pic__00047.png
 
 The next problem is the deadline. In the last lecture we saw how to convert between slots and POSIX times. This has changed. Previously you just needed a slot and out came
 a POSIX time. Now there is a second argument.
@@ -708,34 +708,43 @@ Now we can use ``slotToBeginPOSIXTime`` with the default config to get the POSIX
 And we can use these in the playground. We'll use slot 10 as the deadline for the first and third ``give``s and slot 20 for the second ``give``. We'll also give 10 Ada
 in each case.
 
-.. figure:: img/week03__00048.png
+.. figure:: img/iteration2/pic__00048.png
 
 
 Let's create a scenario where everything works. Wallet 3 grabs at slot 10 when the deadline for Wallet 3 has passed, and Wallet 2 grabs at slot 20, when both
 the Wallet 2 deadlines have passed. We will use the ``Wait Until..`` option for this.
 
-.. figure:: img/week03__00049.png
+.. figure:: img/iteration2/pic__00049.png
 
+After evaluation, we first see the Genesis transaction.
 
-After evaluation, we see the Genesis transaction, plus the give and the
-grab transactions.
+.. figure:: img/iteration2/pic__00050.png
 
-.. figure:: img/week03__00006.png
-   :alt: 
+If we look at the next transaction, we see the gift from Wallet 1 to Wallet 2 with the deadline of 10. Here, ten Ada get locked in the script address.
 
-.. figure:: img/week03__00007.png
-   :alt: 
+.. figure:: img/iteration2/pic__00051.png
 
-.. figure:: img/week03__00008.png
-   :alt: 
+The next transaction is the gift from Wallet 1 to Wallet 2 with the deadline of 20. A new UTxO is now created at the script address with ten Ada.
 
-And the final balances.
+.. figure:: img/iteration2/pic__00052.png
 
-.. figure:: img/week03__00009.png
-   :alt: 
+And the third gift, this time to Wallet 3, with a deadline of 10. Wallet 1 now has about 70 Ada, and another UTxO is created with 10 Ada locked at the script address.
 
-Now let's look at the case where the grab happens too early. We'll
-change the wait time to 14 slots.
+.. figure:: img/iteration2/pic__00053.png
+
+At slot 10, Wallet 3 grabs successfully. The third UTxO is the input, some fees are paid, and then the remainder of the lovelace is sent to Wallet 3.
+
+.. figure:: img/iteration2/pic__00054.png
+
+Then at slot 20, Wallet 2 successfully grabs both the UTxOs for which they are the beneficiary. This time the fee is higher because two validators have to run.
+
+.. figure:: img/iteration2/pic__00055.png
+
+The final balances reflect the changes.
+
+.. figure:: img/iteration2/pic__00056.png
+
+Now let's look at the case where the grab happens too early. We'll make Wallet 2 grab at slot 15 instead of slot 20.
 
 .. figure:: img/week03__00010.png
    :alt: 
