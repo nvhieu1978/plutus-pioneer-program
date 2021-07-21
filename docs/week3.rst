@@ -746,25 +746,49 @@ The final balances reflect the changes.
 
 Now let's look at the case where the grab happens too early. We'll make Wallet 2 grab at slot 15 instead of slot 20.
 
-.. figure:: img/week03__00010.png
+.. figure:: img/iteration2/pic__00010.png
    :alt: 
 
-Now we see just two transactions - the Genesis transaction, and the
-give.
+Now we see that the first transactions are the same, but that the final transaction at slot 15 has only one input, because the second UTxO is not yet available.
 
-.. figure:: img/week03__00012.png
-   :alt: 
+.. figure:: img/iteration2/pic__00057.png
 
-The grab transaction has failed validation.
+And we can see that there are 10 Ada still locked at the script address.
 
-.. figure:: img/week03__00013.png
-   :alt: 
+.. figure:: img/iteration2/pic__00057.png
+
+Our off-chain code was written in such a way that it will only submit a transaction if there is a suitable UTxO that can be grabbed. This means that we don't really
+exercise the validator because we are only sending transactions to the blockchain that will pass validation. 
+
+If you want to test the validator, you could modify the wallet code so that the grab endpoint attempts to grab everything and then validation will fail if you are not
+the beneficiary or the deadline has not been reached.
+
+You need to keep in mind that anybody can write off-chain code. So, even though it works now as long as you use the ``grab`` endpoint that we wrote ourselves, somebody
+could write a different piece of off-chain code that doesn't filter the UTxOs as we did. In this case, if the validator is not correct something could be horribly wrong.
 
 Example 2 - Parameterized Contract
 ----------------------------------
 
-Our next example will be parameterized contracts, but let's start with
-an observation about our existing contract.
+We'll start the next example by copying the code from the vesting example into a new module called ``Week03.Parameterized``.
+
+Note that in the vesting example we used the ``Vesting`` type as the datum, but it was just fixed, it didn't change. Alternatively, we could have baked it into the contract, so to speak,
+so that we have a contract where the script itself already contains the beneficiary and deadline information.
+
+All the examples of contracts we have seen so far were fixed. We used a ``TypedValidator`` as a compile-time constant. The idea of parameterized scripts is that you can
+have a parameter and, depending on the value of the parameter, you get different values of ``TypedValidator``.
+
+So, instead of defining one script, you can define a family of scripts that are parameterized by a given parameter.
+
+We are going to demonstrate how to do this by, instead of using datum for the beneficiary and deadline values, using a parameter.
+
+Let's start by renaming ``VestingDatum`` to something more suitable.
+
+.. code:: haskell
+
+      data VestingParam = VestingParam
+            { beneficiary :: PubKeyHash
+            , deadline    :: POSIXTime
+            } deriving Show
 
 An Observation
 ~~~~~~~~~~~~~~
