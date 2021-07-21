@@ -650,17 +650,72 @@ But we can get it from the REPL.
 
 .. code:: haskell
 
-      Prelude Week03.IsData> import Wallet.Emulator
-      Prelude Wallet.Emulator Week03.IsData> import Ledger
-      Prelude Wallet.Emulator Ledger Week03.IsData> pubKeyHash $ walletPubKey $ Wallet 2
+      Prelude Week03.Homework1> :l src/Week03/Vesting.hs 
+      Ok, one module loaded.
+      Prelude Week03.Vesting> import Ledger
+      Prelude Ledger Week03.Vesting> import Wallet.Emulator
+      Prelude Ledger Wallet.Emulator Week03.Vesting> pubKeyHash $ walletPubKey $ Wallet 2
       39f713d0a644253f04529421b9f51b9b08979d08295959c4f3990ee617f5139f
+      Prelude Ledger Wallet.Emulator Week03.Vesting> pubKeyHash $ walletPubKey $ Wallet 3
+      dac073e0123bdea59dd9b3bda9cf6037f63aca82627d7abcd5c4ac29dd74003e
+            
+.. figure:: img/week03__00047.png
 
-Let's create a scenario where validation passes. Wallet 1 gives 500
-lovelace with a deadline of slot 15. We wait for 15 slots, and then
-Wallet 2 grabs.
+The next problem is the deadline. In the last lecture we saw how to convert between slots and POSIX times. This has changed. Previously you just needed a slot and out came
+a POSIX time. Now there is a second argument.
 
-.. figure:: img/week03__00005.png
-   :alt: 
+.. code:: haskell
+
+      Prelude Ledger Wallet.Emulator Week03.Vesting> import Ledger.TimeSlot 
+      Prelude Ledger Wallet.Emulator Ledger.TimeSlot Week03.Vesting> :t slotToBeginPOSIXTime
+      slotToBeginPOSIXTime :: SlotConfig -> Slot -> POSIXTime
+      
+There are also versions of ``slotToBeginPOSIXTime`` that have a begin and an end time. This is because a slot is not just a point in time, it's a duration in time.
+
+So what is this ``SlotConfig``?
+
+.. code:: haskell
+
+      Prelude Ledger Wallet.Emulator Ledger.TimeSlot Week03.Vesting> :i SlotConfig 
+      type SlotConfig :: *
+      data SlotConfig
+        = SlotConfig {scSlotLength :: Integer, scZeroSlotTime :: POSIXTime}
+              -- Defined in ‘Ledger.TimeSlot’
+      instance Eq SlotConfig -- Defined in ‘Ledger.TimeSlot’
+      instance Show SlotConfig -- Defined in ‘Ledger.TimeSlot’
+      
+It takes the slot length and the time at which slot zero starts.
+
+So now we have to find out what ``SlotConfig`` to use for the playground. Luckily, it's the default. For that we need to use the ``Data.Default`` module.
+
+.. code:: haskell
+
+      Prelude Ledger Wallet.Emulator Ledger.TimeSlot Week03.Vesting> import Data.Default
+      Prelude Ledger Wallet.Emulator Ledger.TimeSlot Data.Default Week03.Vesting> def :: SlotConfig
+      SlotConfig {scSlotLength = 1000, scZeroSlotTime = POSIXTime {getPOSIXTime = 1596059091000}}
+      
+
+Now we can use ``slotToBeginPOSIXTime`` with the default config to get the POSIX time for slot 10 and slot 20.
+
+.. code:: haskell
+
+      Prelude Ledger Wallet.Emulator Ledger.TimeSlot Data.Default Week03.Vesting> slotToBeginPOSIXTime def 10
+      POSIXTime {getPOSIXTime = 1596059101000}
+      
+      Prelude Ledger Wallet.Emulator Ledger.TimeSlot Data.Default Week03.Vesting> slotToBeginPOSIXTime def 20
+      POSIXTime {getPOSIXTime = 1596059111000}
+
+And we can use these in the playground. We'll use slot 10 as the deadline for the first and third ``give``s and slot 20 for the second ``give``. We'll also give 10 Ada
+in each case.
+
+.. figure:: img/week03__00048.png
+
+
+Let's create a scenario where everything works. Wallet 3 grabs at slot 10 when the deadline for Wallet 3 has passed, and Wallet 2 grabs at slot 20, when both
+the Wallet 2 deadlines have passed. We will use the ``Wait Until..`` option for this.
+
+.. figure:: img/week03__00049.png
+
 
 After evaluation, we see the Genesis transaction, plus the give and the
 grab transactions.
