@@ -771,7 +771,7 @@ Example 2 - Parameterized Contract
 
 We'll start the next example by copying the code from the vesting example into a new module called ``Week03.Parameterized``.
 
-On Chain
+On-Chain
 ~~~~~~~~
 
 Note that in the vesting example we used the ``Vesting`` type as the datum, but it was just fixed, it didn't change. Alternatively, we could have baked it into the contract, so to speak,
@@ -780,7 +780,9 @@ so that we have a contract where the script itself already contains the benefici
 All the examples of contracts we have seen so far were fixed. We used a ``TypedValidator`` as a compile-time constant. The idea of parameterized scripts is that you can
 have a parameter and, depending on the value of the parameter, you get different values of ``TypedValidator``.
 
-So, instead of defining one script, you can define a family of scripts that are parameterized by a given parameter.
+So, instead of defining one script, with a single script address, with all UTxOs sitting at the same address, you can define a family of 
+scripts that are parameterized by a given parameter. In our case, this will mean that UTxOs for different beneficiaries and/or deadlines will be a different script addresses, as
+they will have parameterized validators specific to their parameters rather than specific to the datum of the UTxO.
 
 We are going to demonstrate how to do this by, instead of using datum for the beneficiary and deadline values, using a parameter.
 
@@ -894,8 +896,42 @@ would give us what we want.
 
 This seems to solve nothing, because we still need a compiled version of ``p`` and we have the same problem that ``p`` is not known at compile time.
 
-However, ``p`` is not some arbitrary Haskell code, it's data, so it doesn't contain any function types. If we make the type of ``p`` an instance of a type class called ``Lift``,
-we can use ``liftCode`` to compile ``p`` at runtime to Plutus Core and then, using ``applyCode`` we can apply the Plutus Core ``p`` to the Plutus Core ``mkValidator``.
+However, ``p`` is not some arbitrary Haskell code, it's data, so it doesn't contain any function types. If we make the type of ``p`` an instance of a type class called ``Lift``.
+We can use ``liftCode`` to compile ``p`` at runtime to Plutus Core and then, using ``applyCode`` we can apply the Plutus Core ``p`` to the Plutus Core ``mkValidator``.
+
+The Lift Class
+______________
+
+Let's briefly look at the ``Lift`` class. It is defined in package ``plutus-tx``.
+
+.. code:: haskell
+
+      module PlutusTx.Lift.Class
+
+It only has one function, ``Lift``. However, we won't use this function directly.
+
+The importance of the class is that it allows us to, at runtime, lift Haskell values into corresponding Plutus script values. And this is
+exactly what we need to convert our parameter ``p`` into code.
+
+We will use a different function, defined in the same package but in a different module.
+
+.. code:: haskell
+
+      module PlutusTx.Lift
+
+The function we will use is called ``liftCode``.
+
+.. code:: haskell
+
+      -- | Get a Plutus Core program corresponding to the given value as a 'CompiledCodeIn', throwing any errors that occur as exceptions and ignoring fresh names.
+      liftCode
+         :: (Lift.Lift uni a, Throwable uni fun, PLC.ToBuiltinMeaning uni fun)
+         => a -> CompiledCodeIn uni fun a
+      liftCode x = unsafely $ safeLiftCode x
+
+It takes a Haskell value of type ``a``, provided ``a`` is an instance of the ``Lift`` class, and turns it into a piece of Plutus script code corresponding to the same type.
+
+Now we can fix our validator.
 
 .. code:: haskell
 
@@ -918,154 +954,55 @@ And, we need to enable a GHC extension.
 
       {-# LANGUAGE MultiParamTypeClasses #-}
 
-Off Chain
+Now it will compile.      
+
+Off-Chain
 ~~~~~~~~~
 
-.. code:: haskell
+The off-chain code hasn't changed much.
 
-      typedValidator :: VestingParam -> Scripts.TypedValidator Vesting
-      typedValidator p = Scripts.mkTypedValidator @Vesting
-          ($$(PlutusTx.compile [|| mkValidator ||]) `PlutusTx.applyCode` PlutusTx.liftCode p)
-          $$(PlutusTx.compile [|| wrap ||])
-        where
-          wrap = Scripts.wrapValidator @() @()
-
-Also, we won't always get the same instance, so this must now become a function that takes *VestingParam* as an argument.
+The ``GiveParams`` are still the same.
 
 .. code:: haskell
 
-      inst :: VestingParam -> Scripts.ScriptInstance Vesting
-      inst p = Scripts.validator @Vesting
+      data GiveParams = GiveParams
+            { gpBeneficiary :: !PubKeyHash
+            , gpDeadline    :: !POSIXTime
+            , gpAmount      :: !Integer
+            } deriving (Generic, ToJSON, FromJSON, ToSchema)      
 
-The first idea would be to simply do something like this - adding the
-*p* as a parameter, which would make the type correct again.
-
-.. code:: haskell
-
-      -- this won't work
-      $$(PlutusTx.compile [|| mkValidator p ||])
-
-But the problem is that, as we have seen before, in Template Haskell,
-the things inside the Oxford Brackets must be known at compile time, but
-the value of *p* here will not be known until runtime.
-
-Luckily, there is a way around this.
-
-We have something called applyCode, which takes two Plutus scripts, and,
-assuming that the first one is a function, it applies this function to
-the second argument.
+``VestingSchema`` has slightly changed because the ``grab`` endpoint now relies on knowing the beneficiary and deadline in order to know 
+determine the script address. We know the beneficiary because it will be the public key hash of the wallet that calls ``grab``, but we don't know the deadline, so we must
+pass it to ``grab``.
 
 .. code:: haskell
 
-      -- partial code
-      ($$(PlutusTx.compile [|| mkValidator ||]) `PlutusTx.applyCode` -- ...
+      type VestingSchema =
+                Endpoint "give" GiveParams
+            .\/ Endpoint "grab" POSIXTime
 
-So, now, this...
+The ``give`` endpoint is similar to the vesting example, but there are some differences.
 
-.. code:: haskell
-
-      ($$(PlutusTx.compile [|| mkValidator ||])
-
-...is now a Plutus script for a function that takes such a parameter.
-So, now, we must write a Plutus script for that parameter. Then
-*applyCode* will apply the function to the script for the parameter, and
-we will get a script of the right type out of that.
-
-But this looks like it still doesn't solve the problem because what do
-we write after *applyCode*? How do we get the parameter there. We can't
-use PlutusTx.compile, as we have already seen.
-
-This is where another important class comes in - the so-called *Lift*
-class.
-
-The Lift Class
-^^^^^^^^^^^^^^
-
-The *Lift* class is defined in package *plutus-tx*.
+Instead of computing the datum, we will construct something of type ``VestingParam``. We also change the reference to the datum in ``mustPayToTheScript`` to become ``()``, and
+we provide the type ``p`` to ``typedValidator`` as it is no longer a constant.
 
 .. code:: haskell
 
-      module PlutusTx.Lift.Class
+      give :: AsContractError e => GiveParams -> Contract w s e ()
+      give gp = do
+          let p  = VestingParam
+                      { beneficiary = gpBeneficiary gp
+                      , deadline    = gpDeadline gp
+                      }
+              tx = mustPayToTheScript () $ Ada.lovelaceValueOf $ gpAmount gp
+          ledgerTx <- submitTxConstraints (typedValidator p) tx
+          void $ awaitTxConfirmed $ txId ledgerTx
+          logInfo @String $ printf "made a gift of %d lovelace to %s with deadline %s"
+              (gpAmount gp)
+              (show $ gpBeneficiary gp)
+              (show $ gpDeadline gp)      
 
-It only has one function, *Lift*. However, we won't use this function
-directly.
-
-The importance of the class is that it allows us to, at runtime, lift
-Haskell values into corresponding Plutus script values. And this is
-exactly what we need to convert our parameter *p* into code.
-
-We will use a different function, defined in the same package but in a
-different module.
-
-.. code:: haskell
-
-      module PlutusTx.Lift
-
-The function we will use is called *liftCode*
-
-.. code:: haskell
-
-      -- | Get a Plutus Core program corresponding to the given value as a 'CompiledCodeIn', throwing any errors that occur as exceptions and ignoring fresh names.
-      liftCode
-         :: (Lift.Lift uni a, Throwable uni fun, PLC.ToBuiltinMeaning uni fun)
-         => a -> CompiledCodeIn uni fun a
-      liftCode x = unsafely $ safeLiftCode x
-
-It takes a Haskell value of type *a*, provided *a* is an instance of the
-*Lift* class, and turns it into a piece of Plutus script code
-corresponding to the same type.
-
-So, let's use that.
-
-.. code:: haskell
-
-      ($$(PlutusTx.compile [|| mkValidator ||]) `PlutusTx.applyCode` PlutusTx.liftCode p)
-
-There is still a problem, however. We need a *Lift* instance for *p*.
-
-Luckily, similar to how we got an instance for *IsData* there is also a
-Template Haskell function for *Lift*.
-
-.. code:: haskell
-
-      PlutusTx.makeLift ''VestingParam
-
-But, it still won't compile. We need another GHC extension.
-
-.. code:: haskell
-
-      {-# LANGUAGE MultiParamTypeClasses #-}
-
-Now we have to some more little modifications.
-
-.. code:: haskell
-
-      validator :: VestingParam -> Validator
-      validator = Scripts.validatorScript . inst
-
-      scrAddress :: VestingParam -> Ledger.Address
-      scrAddress = scriptAddress . validator
-
-Changes are also necessary in the wallet part.
-
-The *GiveParams* stay the same, but the endpoints are slightly
-different, because in the *grab* endpoint earlier we only had the Unit
-argument, but now we need the slot.
-
-This is because, in order to construct the address that we grab from, we
-need the params - the beneficiary and the deadline. We already now the
-beneficiary, as it will be the address of the wallet that is doing the
-grabbing, but we need to pass in the slot value for the deadline.
-
-In the *give* endpoint, there are also some differences.
-
-Whenever we need an *inst* we must pass in the params.
-
-.. code:: haskell
-
-      ledgerTx <- submitTxConstraints (inst p) tx
-
-And in the *grab* endpoint, we have the additional parameter.
+In the ``grab`` endpoint, we have the additional parameter.
 
 .. code:: haskell
 
