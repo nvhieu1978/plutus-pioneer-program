@@ -771,6 +771,9 @@ Example 2 - Parameterized Contract
 
 We'll start the next example by copying the code from the vesting example into a new module called ``Week03.Parameterized``.
 
+On Chain
+~~~~~~~~
+
 Note that in the vesting example we used the ``Vesting`` type as the datum, but it was just fixed, it didn't change. Alternatively, we could have baked it into the contract, so to speak,
 so that we have a contract where the script itself already contains the beneficiary and deadline information.
 
@@ -790,141 +793,144 @@ Let's start by renaming ``VestingDatum`` to something more suitable.
             , deadline    :: POSIXTime
             } deriving Show
 
-An Observation
-~~~~~~~~~~~~~~
+We will also remove the ``unstableMakeIsData`` call as we don't need this anymore.
 
-We will set up a scenario where both wallets give and both wallets grab.
-
-Again, in this example, the public key hash of Wallet 1's address was
-obtained from the REPL in the same way as with the Wallet 2 example
-above.
-
-.. figure:: img/week03__00014.png
-   :alt: 
-
-After evaluation...
-
-The Genesis transaction, as always.
-
-.. figure:: img/week03__00015.png
-   :alt: 
-
-The give of Wallet 2...
-
-.. figure:: img/week03__00016.png
-   :alt: 
-
-The give of Wallet 1...
-
-.. figure:: img/week03__00017.png
-   :alt: 
-
-The grab of Wallet 2...
-
-.. figure:: img/week03__00018.png
-   :alt: 
-
-And, the grab of Wallet 1...
-
-.. figure:: img/week03__00019.png
-   :alt: 
-
-Now, what we want to focus on here is the script addresses for the give
-of Wallet 1 and the give of Wallet 2. If you look back at those
-screenshots, you will notice that the script address in both cases is
-the same.
-
-And this is not surprising. Recall that the address of the script is
-calculated by taken the hash of the compiled Plutus code of the
-validator. Since the same validator is being used in both those
-transactions, the script address is the same.
-
-Keep this in mind for what we are about to cover in the following
-section.
-
-Another Way of Doing It
-~~~~~~~~~~~~~~~~~~~~~~~
-
-In our example, we have put the beneficiary and the deadline into the
-datum. But there are other choices.
-
-You could also parameterize the whole script on those two pieces of data
-- the beneficiary and the deadline.
-
-A parameterized script is like a family of scripts. You can instantiate
-it with different parameters, and you get different scripts. They all
-behave the same, but they have these different parameters.
-
-We start by making a copy of Vesting.hs and creating a new module -
-Week03.Parameterized.
-
-Now, instead of using the *VestedDatum*, we are going to parameterize
-the script with it. It makes sense to first change its name.
+The reason we don't need it, is because we are just going to use ``()`` for the datum in the ``mkValidator`` function. All the information we require will be in a new argument
+to ``mkValidator``, of type ``VestingParam``, which we add at the beginning of the list of arguments.
 
 .. code:: haskell
 
-      data VestingParam = VestingParam
-         { beneficiary :: PubKeyHash
-         , deadline    :: Slot
-         } deriving Show
-
-Next, we will return to using Unit as our datum type, but we will add a
-new validation argument, before the other arguments, of our new type
-*VestingParam*.
-
-.. code:: haskell
-
+      {-# INLINABLE mkValidator #-}
       mkValidator :: VestingParam -> () -> () -> ScriptContext -> Bool
-
-The idea is that mkValidator is now a function that takes a VestingParam
-and returns a custom validator based on those params.
-
-We don't need to change much, just the function header and the parts
-that previously accessed the datum.
-
-.. code:: haskell
-
-      mkValidator :: VestingParam -> () -> () -> ScriptContext -> Bool
-      mkValidator p () () ctx =
-         traceIfFalse "beneficiary's signature missing" checkSig      &&
-         traceIfFalse "deadline not reached"            checkDeadline
-      where
-         info :: TxInfo
-         info = scriptContextTxInfo ctx
-
-         checkSig :: Bool
-         checkSig = beneficiary p `elem` txInfoSignatories info
-
-         checkDeadline :: Bool
-         checkDeadline = from (deadline p) `contains` txInfoValidRange info
-
-And, we need to change another piece of code that previously referenced
-the datum.
+      mkValidator p () () ctx = traceIfFalse "beneficiary's signature missing" signedByBeneficiary &&
+                                traceIfFalse "deadline not reached" deadlineReached
+        where
+          info :: TxInfo
+          info = scriptContextTxInfo ctx
+      
+          signedByBeneficiary :: Bool
+          signedByBeneficiary = txSignedBy info $ beneficiary p
+      
+          deadlineReached :: Bool
+          deadlineReached = contains (from $ deadline p) $ txInfoValidRange info
+          
+We also change the ``Vesting`` type to reflect the change to the datum.
 
 .. code:: haskell
 
       data Vesting
-      instance Scripts.ScriptType Vesting where
-         type instance DatumType Vesting = ()
-         type instance RedeemerType Vesting = ()
+      instance Scripts.ValidatorTypes Vesting where
+          type instance DatumType Vesting = ()
+          type instance RedeemerType Vesting = ()     
 
-And now we come to an interesting question. What do we do here?
+Now, the ``TypedValidator`` will no longer be a constant value. Instead it will take a parameter.
+
+Recall that the function ``mkTypedValidator`` requires as its first argument the compiled code of a function that takes three arguments and returns a ``Bool``. But now, it has four arguments,
+so we need to account for that.
 
 .. code:: haskell
 
-      inst :: Scripts.ScriptInstance Vesting
-      inst = Scripts.validator @Vesting
-         $$(PlutusTx.compile [|| mkValidator ||])
-         $$(PlutusTx.compile [|| wrap ||])
-      where
-         wrap = Scripts.wrapValidator @VestingDatum @()
+      typedValidator :: VestingParam -> Scripts.TypedValidator Vesting
+      typedValidator p = Scripts.mkTypedValidator @Vesting      
 
-As is, this won't work because now *mkValidator* has the wrong type.
-Remember that it must be a function that takes three arguments and
-returns a boolean. But now, it has four arguments.
+Now, what we would like to do is something like this, passing in the new parameter ``p`` to ``mkValidator`` so that the compiled code within the Oxford brackets would have the correct type.
 
-Also, we won't always get the same instance, so this must now become a
-function that takes *VestingParam* as an argument.
+.. code:: haskell
+
+      -- this won't work
+      $$(PlutusTx.compile [|| mkValidator p ||])
+      $$(PlutusTx.compile [|| wrap ||])
+    where
+      wrap = Scripts.wrapValidator @() @()
+
+This code will not work, but before we investigate, let's leave the code as it is for now and make some more changes to the rest of the code.
+
+``validator`` now will take a ``VestingParam`` and will return a composed function. The returned function has the effect that any paramater passed to ``validator`` would now effectively
+get passed to the ``typedValidator`` function, whose return value would in turned get passed to the ``validatorScript`` function.
+
+.. code:: haskell
+
+      validator :: VestingParam -> Validator
+      validator = Scripts.validatorScript . typedValidator
+
+And the same for ``valHash`` and ``scrAddress``.
+
+.. code:: haskell
+
+      valHash :: VestingParam -> Ledger.ValidatorHash
+      valHash = Scripts.validatorHash . typedValidator
+
+      scrAddress :: VestingParam -> Ledger.Address
+      scrAddress = scriptAddress . validator
+          
+Now, let's find out what's wrong with out ``typedValidator`` function.
+
+If we try to launch the REPL, we get a compile error.
+
+.. code:: haskell
+
+      GHC Core to PLC plugin: E043:Error: Reference to a name which is not a local, a builtin, or an external INLINABLE function: Variable p
+      No unfolding
+      Context: Compiling expr: p
+      Context: Compiling expr: Week03.Parameterized.mkValidator p
+      Context: Compiling expr at "plutus-pioneer-program-week03-0.1.0.0-inplace:Week03.Parameterized:(67,10)-(67,48)"
+
+The problem is this line.
+
+.. code:: haskell
+
+      -- this won't work
+      $$(PlutusTx.compile [|| mkValidator p ||])
+
+Recall that everything inside the Oxford brackets must be explicitly known at compile time. Normally it would even need all the code to be written explicitly, but
+by using the ``INLINABLE`` pragma on the ``mkValidator`` function we can reference the function instead. However, it must still be known at compile time, because that's
+how Template Haskell works - it is executed before the main compiler.
+
+The ``p`` is not known at compile time, because we intend to supply it at runtime. Luckily there is a way around this.
+
+On the Haskell side, we have our ``mkValidator`` function and we have ``p`` of type ``VestingParam``. We can compile ``mkValidator`` to Plutus, but we can't compile ``p`` to Plutus
+because we don't know what it is. But, if we could get our hands on the compiled version of ``p``, we could apply this compiled version to the compiled ``mkValidator``, and this
+would give us what we want.
+
+This seems to solve nothing, because we still need a compiled version of ``p`` and we have the same problem that ``p`` is not known at compile time.
+
+However, ``p`` is not some arbitrary Haskell code, it's data, so it doesn't contain any function types. If we make the type of ``p`` an instance of a type class called ``Lift``,
+we can use ``liftCode`` to compile ``p`` at runtime to Plutus Core and then, using ``applyCode`` we can apply the Plutus Core ``p`` to the Plutus Core ``mkValidator``.
+
+.. code:: haskell
+
+      typedValidator :: VestingParam -> Scripts.TypedValidator Vesting
+      typedValidator p = Scripts.mkTypedValidator @Vesting
+          ($$(PlutusTx.compile [|| mkValidator ||]) `PlutusTx.applyCode` PlutusTx.liftCode p)
+          $$(PlutusTx.compile [|| wrap ||])
+        where
+          wrap = Scripts.wrapValidator @() @()
+
+This code is fine, but it won't yet compile, because ``VestingParam`` is not an instance of ``Lift``. To fix this, we can use ``makeLift``.
+
+.. code:: haskell
+
+      PlutusTx.makeLift ''VestingParam
+
+And, we need to enable a GHC extension.
+
+.. code:: haskell
+
+      {-# LANGUAGE MultiParamTypeClasses #-}
+
+Off Chain
+~~~~~~~~~
+
+.. code:: haskell
+
+      typedValidator :: VestingParam -> Scripts.TypedValidator Vesting
+      typedValidator p = Scripts.mkTypedValidator @Vesting
+          ($$(PlutusTx.compile [|| mkValidator ||]) `PlutusTx.applyCode` PlutusTx.liftCode p)
+          $$(PlutusTx.compile [|| wrap ||])
+        where
+          wrap = Scripts.wrapValidator @() @()
+
+Also, we won't always get the same instance, so this must now become a function that takes *VestingParam* as an argument.
 
 .. code:: haskell
 
