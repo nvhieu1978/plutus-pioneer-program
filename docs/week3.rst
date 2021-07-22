@@ -1002,54 +1002,80 @@ we provide the type ``p`` to ``typedValidator`` as it is no longer a constant.
               (show $ gpBeneficiary gp)
               (show $ gpDeadline gp)      
 
-In the ``grab`` endpoint, we have the additional parameter.
+In the ``grab`` endpoint, there are also some changes.
+
+Recall that earlier we got all the UTxOs sitting at this one script address and that they could be for arbitrary beneficiaries and for arbitrary deadlines. For this reason, we
+had to filter those UTxOs which were for us and where the deadline had been reached.
+
+We now have the additional parameter, which we'll call ``d``, which represents the deadline. So we can immediately see if the deadline has been reached or not.
+
+If it has not been reached, we write a log message and stop, otherwise we continue and construct the ``VestingParam``.
+
+Then, we look up the UTxOs that are sitting at this address. Address is not a constant anymore, it takes a parameter. So, now, we will only get UTxOs which are for us and that
+have a deadline that has been reached. We don't need to filter anything.
+
+If there are none, we log a message to that effect and stop, otherwise we do more or less what we did before.
 
 .. code:: haskell
 
       grab d = do
-
-And we can use that to construct the parameters, along with our own
-public key hash.
-
-.. code:: haskell
-
-      let p = VestingParam
-                  { beneficiary = pkh
-                  , deadline    = d
-                  }
-
-And again, when we use something like *scrAddress*, we need to pass in
-the parameters.
-
-.. code:: haskell
-
-      utxos <- utxoAt $ scrAddress p
-
-Now, the good thing with this is that we don't need the filter helper
-function *isSuitable* anymore. Previously, we got all the UTxOs sitting
-at the script address and filtered them based on beneficiary and
-deadline. But now, it's much easier because the script is already
-parameterized by beneficiary, so we know that this script will only hold
-UTxOs that are for us.
-
-So, all we need to do is to check that *now* is not earlier than the
-deadline.
-
-.. code:: haskell
-
+      now   <- currentTime
+      pkh   <- pubKeyHash <$> ownPubKey
       if now < d
-         then logInfo @String $ "too early"
-         else do
-         ...
+          then logInfo @String $ "too early"
+          else do
+              let p = VestingParam
+                          { beneficiary = pkh
+                          , deadline    = d
+                          }
+                          utxos <- utxoAt $ scrAddress p
+                          if Map.null utxos
+                              then logInfo @String $ "no gifts available"
+                              else do
+                                  let orefs   = fst <$> Map.toList utxos
+                                      lookups = Constraints.unspentOutputs utxos      <>
+                                                Constraints.otherScript (validator p)
+                                      tx :: TxConstraints Void Void
+                                      tx      = mconcat [mustSpendScriptOutput oref $ Redeemer $ PlutusTx.toData () | oref <- orefs] <>
+                                                mustValidateIn (from now)
+                                  ledgerTx <- submitTxConstraintsWith @Void lookups tx
+                                  void $ awaitTxConfirmed $ txId ledgerTx
+                                  logInfo @String $ "collected gifts"                          
+
+The ``endpoints`` function is slightly different due to the new parameter for ``grab``.
+
+.. code:: haskell
+
+      endpoints :: Contract () VestingSchema Text ()
+      endpoints = (give' `select` grab') >> endpoints
+        where
+          give' = endpoint @"give" >>= give
+          grab' = endpoint @"grab" >>= grab
 
 Back to the playground
 ~~~~~~~~~~~~~~~~~~~~~~
 
-If we copy paste this new contract into the playground and setup the
-same scenario as before...
+We will now copy and paste this new contract into the playground and setup a new scenario.
 
-.. figure:: img/week03__00020.png
-   :alt: 
+The ``give`` transactions are the same.
+
+.. figure:: img/iteration2/pic__00059.png
+
+The ``grab`` is slightly different. In our earlier implementation, one wallet could grab UTxOs with different deadlines provided that the deadlines had passed. Now the deadline
+is part of the script parameter, so we need to specify it in order to get the script address. This means that Wallet 2 cannot grab the gifts for slots 10 and 20 at the same time,
+at least not in the way that we have implemented it.
+
+First we can wait until slot 10 and then Wallet 2 should be able to grab its first gift and Wallet 3 should be able to claim its single gift.
+
+We'll add a ``grab`` for Wallets 2 and 3. Here, we don't need to wain in between each transaction because it is two different wallets.
+
+We then wait until slot 20 and perform Wallet 2's second ``grab`` and then wait for 1 block, as usual.
+
+.. figure:: img/iteration2/pic__00060.png
+
+
+
+
 
 We can see that now, one of the disadvantages to doing it this way is
 that the wallets now need to know the deadline in order to construct the
