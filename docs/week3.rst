@@ -1073,29 +1073,33 @@ We then wait until slot 20 and perform Wallet 2's second ``grab`` and then wait 
 
 .. figure:: img/iteration2/pic__00060.png
 
+So let's see if it works by clicking ``Evaluate``.
 
+.. figure:: img/iteration2/pic__00061.png
 
+Take note of the script address for that transaction out at slot 1.
 
+.. figure:: img/iteration2/pic__00062.png
 
-We can see that now, one of the disadvantages to doing it this way is
-that the wallets now need to know the deadline in order to construct the
-script address.
+And compare this with the script address for the transaction output at slot 2.
 
-If you evaluate this, you will see that it succeeds.
+.. figure:: img/iteration2/pic__00063.png
 
-.. figure:: img/week03__00021.png
-   :alt: 
+Notice that the script address for the UTxOs is different. In our first version of the vesting contract, the script address was a constant. This meant that all our gifts ended up
+at the same script address and only the datum in each UTxO was different.
 
-But now, compare the script address that Wallet 1 sends to with the
-script address that Wallet 2 sends to.
+Now, the datum is just ``()`` and the beneficiary and the deadline are included as part of the script itself, so the addresses are now different depending on the beneficiary and
+deadline parameters.
 
-.. figure:: img/week03__00022.png
-   :alt: 
+For the gift to Wallet 3 we see yet another address.
 
-They are now different. The UTxOs are being held at different addresses.
+.. figure:: img/iteration2/pic__00064.png
 
-This is because of the parameters. The same script but with different
-parameters will have a different hash.
+We see two grabs in slot 10, one by Wallets 2 and one by Wallet 3. The order in which they are processed is not deterministic.
 
-Whether this is a good thing or a bad thing will depend on the use case.
+Then, finally in slot 20, Wallet 2 grabs its remaining gift.
+
+And the final balances reflect the transactions that have occurred.
+
+.. figure:: img/iteration2/pic__00065.png
 
