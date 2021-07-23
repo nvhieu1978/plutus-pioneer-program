@@ -2,11 +2,11 @@ Week 04 - Monads
 ================
 
 .. note::
-      These is a written version of `Lecture
-      #4 <https://youtu.be/6Reuh0xZDjY>`__.
+      These is a written version of `Lecture #4, Iteration #2 <https://www.youtube.com/watch?v=g4lvA14I-Jg>`__.
 
-      In this lecture we learn about Monads. In particular the EmulatorTrace
-      and Contract monads.
+      In this lecture we learn about Monads. In particular the EmulatorTrace and Contract monads.
+
+      The examples in this lecture use Plutus commit ``219992289c6615e197069d022735cb4059d43229``.      
 
 Overview
 --------

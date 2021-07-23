@@ -7,23 +7,22 @@
 
 module Week04.Homework where
 
-import Data.Aeson                 (FromJSON, ToJSON)
-import Data.Functor               (void)
-import Data.Text                  (Text, unpack)
-import GHC.Generics               (Generic)
+import Data.Aeson            (FromJSON, ToJSON)
+import Data.Functor          (void)
+import Data.Text             (Text)
+import GHC.Generics          (Generic)
 import Ledger
-import Ledger.Ada                 as Ada
-import Ledger.Constraints         as Constraints
-import Plutus.Contract            as Contract
-import Plutus.Trace.Emulator      as Emulator
-import Wallet.Emulator.Wallet
+import Ledger.Ada            as Ada
+import Ledger.Constraints    as Constraints
+import Plutus.Contract       as Contract
+import Plutus.Trace.Emulator as Emulator
 
 data PayParams = PayParams
     { ppRecipient :: PubKeyHash
     , ppLovelace  :: Integer
     } deriving (Show, Generic, FromJSON, ToJSON)
 
-type PaySchema = BlockchainActions .\/ Endpoint "pay" PayParams
+type PaySchema = Endpoint "pay" PayParams
 
 payContract :: Contract () PaySchema Text ()
 payContract = do
@@ -36,7 +35,7 @@ payContract = do
 -- recipient, but with amounts given by the two arguments. There should be a delay of one slot
 -- after each endpoint call.
 payTrace :: Integer -> Integer -> EmulatorTrace ()
-payTrace x y = undefined -- IMPLEMENT ME!
+payTrace _ _ = undefined -- IMPLEMENT ME!
 
 payTest1 :: IO ()
 payTest1 = runEmulatorTraceIO $ payTrace 1000000 2000000
