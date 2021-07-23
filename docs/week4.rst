@@ -42,18 +42,17 @@ needed.
 The on-chain part that we have seen so far is somewhat alien and takes a
 little getting used to, due to the fact that we have the additional
 complication of the compilation to Plutus script. But, we don't really
-have to worry about that if we use the Template Haskell magic. In that
-case the validator function is just a plain function.
+have to worry about that if we accept the Template Haskell magic, because then
+we can just think of the validator function as a plain Haskell function.
 
 And it is actually a very simple Haskell function from the technical
-point of view. We don't use any fancy Haskell features to write this
-function.
+point of view. We don't use any fancy Haskell features to write it.
 
 One of the reasons for that is the way Plutus compilation works. We have
 seen how, in order for the compilation to Plutus to succeed, all the
 code used by the validation function must be available within the Oxford
 Brackets. This means that all the functions relied on by the
-*mkValidator* function must use the INLINABLE pragma.
+``mkValidator`` function must use the ``INLINABLE`` pragma.
 
 .. code:: haskell
 
@@ -64,13 +63,13 @@ Brackets. This means that all the functions relied on by the
       $$(PlutusTx.compile [|| mkValidator ||])
 
 And recall, that because the standard Haskell functions don't have this
-INLINABLE pragma, there is a new Plutus Prelude module that is similar
+``INLINABLE`` pragma, there is a new Plutus Prelude module that is similar
 to the standard Haskell Prelude, but with the functions defined with the
-INLINABLE pragma.
+``INLINABLE`` pragma.
 
-But, of course, there are hundreds of Haskell libraries out there and
+But, of course, there are thousands of Haskell libraries out there and
 most of them weren't written with Plutus in mind, so we can't use them
-inside validation. And, that has the effect that the Haskell inside
+inside validation. And, that has the effect that the Haskell code inside
 validation will be relatively simple and won't have many dependencies.
 
 Monads
@@ -83,17 +82,18 @@ uses much more sophisticated Haskell features - e.g. so-called effect
 systems, streaming and, in particular, monads.
 
 All the off-chain code (the wallet code), is written in a special monad
-- the Contract Monad.
+called the Contract Monad.
 
-Monads are infamous in the Haskell world. It is normally the first
+Monads are infamous in the Haskell world. They are normally the first
 stumbling block for beginning Haskell coders.
 
 There are a lot of tutorials out there that try to explain Monads.
+
 Monads get compared to burritos, and all sorts of metaphors are employed
 to try to explain the concept. But here, let's at least try to give a
 crash course in monads for those who are new to Haskell.
 
-Before we get to general monads, we will start with *IO*, which is how
+Before we get to general monads, we will start with ``IO``, which is how
 IO side-effects are handled in Haskell. But, before we get to Haskell,
 let's look at a mainstream language like Java.
 
