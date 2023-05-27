@@ -1,5 +1,0 @@
-{
-    "restructuredtext.linter.disabled": true,
-    "restructuredtext.confPath": "${workspaceFolder}/docs",
-    "restructuredtext.builtDocumentationPath": "${workspaceFolder}/_build/html"
-}
