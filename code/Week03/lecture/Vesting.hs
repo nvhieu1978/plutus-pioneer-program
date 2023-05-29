@@ -32,7 +32,7 @@ unstableMakeIsData ''VestingDatum
 
 {-# INLINABLE mkVestingValidator #-}
 mkVestingValidator :: VestingDatum -> () -> ScriptContext -> Bool
-mkVestingValidator dat () ctx = traceIfFalse "beneficiary's signature missing" signedByBeneficiary &&
+mkVestingValidator dat () ctx = traceIfFalse "beneficiary's signature miss" signedByBeneficiary &&
                                 traceIfFalse "deadline not reached" deadlineReached
   where
     info :: TxInfo
@@ -55,7 +55,7 @@ validator = mkValidatorScript $$(compile [|| mkWrappedVestingValidator ||])
 ------------------------------------- HELPER FUNCTIONS --------------------------------------------
 
 saveVal :: IO ()
-saveVal = writeValidatorToFile "./assets/vesting.plutus" validator
+saveVal = writeValidatorToFile "./assets/vest.plutus" validator
 
 vestingAddressBech32 :: Network -> String
 vestingAddressBech32 network = validatorAddressBech32 network validator
