@@ -19,7 +19,7 @@ cardano-cli transaction build \
     --babbage-era \
     --testnet-magic 2 \
     --tx-in "$txin" \
-    --tx-out "$(cat "$assets/vest.addr") + 1200123 lovelace" \
+    --tx-out "$(cat "$assets/vest.addr") + 12000135 lovelace" \
     --tx-out-inline-datum-file "$assets/datum.json" \
     --change-address "$(cat "$keypath/$name.addr")" \
     --out-file "$body"
