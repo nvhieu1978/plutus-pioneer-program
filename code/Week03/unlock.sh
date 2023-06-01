@@ -8,6 +8,7 @@ collateral="$2"
 txin="$3"
 signer_hash="$4"
 slot="$5"
+sm="$6"
 
 pp="$assets/protocol-parameters.json"
 body="$assets/collect-vest.txbody"
@@ -24,9 +25,9 @@ cardano-cli transaction build \
     --babbage-era \
     --testnet-magic 2 \
     --tx-in "$txin" \
-    --tx-in-script-file "$assets/vest.plutus" \
+    --tx-in-script-file "$assets/$sm.plutus" \
     --tx-in-inline-datum-present \
-    --tx-in-redeemer-file "$assets/datum.json" \
+    --tx-in-redeemer-file "$assets/unit.json" \
     --tx-in-collateral "$collateral" \
     --change-address "$(cat "$keypath/$name.addr")" \
     --protocol-params-file "$pp" \

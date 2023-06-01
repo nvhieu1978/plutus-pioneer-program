@@ -5,21 +5,21 @@ keypath=/app/ppp4/keys
 name="$1"
 txin="$2"
 sm="$3"
-body="$assets/vest.txbody"
-tx="$assets/vest.tx"
+body="$assets/build.txbody"
+tx="$assets/sign.tx"
 
 # Build vest address 
 cardano-cli address build \
-    --payment-script-file "$assets/vest.plutus" \
+    --payment-script-file "$assets/$sm.plutus" \
     --testnet-magic 2 \
-    --out-file "$assets/vest.addr"
+    --out-file "$assets/$sm.addr"
 
 # Build the transaction
 cardano-cli transaction build \
     --babbage-era \
     --testnet-magic 2 \
     --tx-in "$txin" \
-    --tx-out "$(cat "$assets/vest.addr") + 12000135 lovelace" \
+    --tx-out "$(cat "$assets/$sm.addr") + 12300135 lovelace" \
     --tx-out-inline-datum-file "$assets/datum.json" \
     --change-address "$(cat "$keypath/$name.addr")" \
     --out-file "$body"
